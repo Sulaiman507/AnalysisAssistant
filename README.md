@@ -1,2 +1,86 @@
-# AnalysisAssistant
-AI assistant that analyzes Android APKs to find premium checks — MT Manager MCP + DeepSeek (Kotlin)
+# مساعد التحليل — تطبيق أندرويد (Kotlin)
+
+مساعد ذكاء اصطناعي لتحليل ملفات APK وإيجاد بوابة فحص Premium، عبر خدمة MT Manager ‏(APK MCP) ‏+ نموذج DeepSeek.
+
+المرجع: خطة البناء «خطة بناء أداة مساعد التحليل» — المرحلة ١: إثبات الاتصال بـ MT MCP.
+
+## القرارات المثبّتة
+
+- **الـ stack:** Kotlin — تطبيق أندرويد أصلي.
+- **النموذج الافتراضي:** DeepSeek (مع إتاحة مزوّد متوافق من الإعدادات لاحقاً).
+- **نطاق النسخة الأولى:** تقرير + خطة تعديل فقط؛ التعديل التلقائي في إصدار لاحق.
+- **التشغيل:** الاعتماد على MT Manager (تشغيل خدمة MCP يدوياً في كل مرة) كشرط استخدام معلن.
+- **لغة الواجهة:** عربية فقط في النسخة الأولى.
+
+## ملاحظة عن الحزمة
+
+حزمة التطبيق الحالية `com.musaed.analysis` **مؤقتة وقابلة للتغيير** قبل النشر — لم تُحسم الحزمة النهائية بعد. لا تُنشأ أي حسابات أو مفاتيح مرتبطة بها.
+
+## البنية
+
+```
+analysis-assistant/
+├── app/        # تطبيق أندرويد (MainActivity: شاشة فحص المرحلة ١)
+├── mcp/        # عميل MCP — Kotlin/JVM خالص، بلا اعتماديات أندرويد
+│   └── src/main/java/com/musaed/analysis/mcp/
+│       ├── McpClient.kt       # JSON-RPC فوق HTTP: initialize / tools/list / tools/call
+│       ├── McpTool.kt         # أداة واحدة كما رجعت حياً من الخدمة
+│       ├── ToolsListStore.kt  # حفظ القائمة في tools_list.json + tools_list.txt
+│       ├── GateTest.kt        # اختبار البوابة: فتح APK حقيقي وقراءة مخطط كلاس
+│       ├── GateTestStore.kt   # حفظ نتيجة اختبار البوابة في gate_test.txt
+│       └── McpProbe.kt        # نقطة دخول CLI للاختبار من سطر الأوامر
+└── tools/
+    └── mock_mcp_server.py     # خادم MCP وهمي (أدوات mock.*) لاختبار العميل محلياً فقط
+```
+
+**قاعدة ملزمة:** لا يوجد أي اسم أداة مخترع في الكود. أسماء الأدوات المستخدمة
+(اختبار البوابة فقط) مأخوذة حرفياً من القائمة الحية التي جُلبت من جهاز
+المستخدم (67 أداة، MT MCP 0.2.0، جُلبت 2026-11-14)، وسكربت
+`tools/verify-local.sh` يتحقق قبل كل بناء أن كل اسم في الكود موجود في تلك
+القائمة. أي اسم يظهر في الاختبارات أو الخادم الوهمي يبدأ بـ `mock.` أو `test.`
+وهو وهمي صراحة.
+
+## البناء
+
+```bash
+export JAVA_HOME=~/tools/jdk-21.0.12.1+1
+export PATH="$JAVA_HOME/bin:$PATH"
+./gradlew :mcp:test :app:assembleDebug
+```
+
+- الإصدارات: AGP 9.4.1، Kotlin 2.4.20، Gradle 9.8.2، compileSdk 36، minSdk 26 (مطابقة لـ ArDroid).
+- إعدادات البروكسي الخاصة ببيئة التطوير هذه في `~/.gradle/gradle.properties` (خارج المشروع، لا تُنسخ معه).
+- APK الناتج: `app/build/outputs/apk/debug/app-debug.apk`.
+
+## فحص العميل محلياً (بدون الهاتف)
+
+```bash
+# 1) شغّل الخادم الوهمي (وضع JSON أو SSE) — على آلة تطوير عادية فقط
+python3 tools/mock_mcp_server.py --mode json
+# 2) في طرفية ثانية: شغّل الفاحص ضد الخادم الوهمي
+./gradlew :mcp:runProbe --args="--url http://127.0.0.1:8787/mcp --out build/probe-output"
+```
+
+مخرجات الفاحص: `tools_list.json` + `tools_list.txt` في مجلد الإخراج. مخرجات الخادم الوهمي تُحذف بعد التحقق — ليست القائمة الحقيقية.
+
+> **في هذه الحاوية تحديداً، الخطوتان أعلاه لا تعملان من JVM** (انظر «قيود بيئة التطوير هذه» أدناه) — التبادل الحي يُتحقق منه على الهاتف (بوابة القبول).
+
+## قيود بيئة التطوير هذه (هذه الحاوية فقط — لا تخص التطبيق)
+
+1. **اتصالات TCP المباشرة من عمليات JVM محظورة من الـ sandbox.** الدليل: `HttpClient` يُظهر رسالة الحظر حرفياً عند محاولة الاتصال بـ `127.0.0.1:8787`:
+   `muse: Other TCP connections is turned off for this assistant. To allow it, ask the user to open Muse settings -> Permissions -> Direct network protocols and switch other_tcp from Deny to Ask.`
+   النتيجة: لا يعمل فاحص MCP ولا اختبار التبادل الحي من JVM هنا، رغم أن curl وPython يصلان لنفس الخدمة بلا مشكلة. هذا قيد بيئة، لا خطأ في العميل — على الهاتف (أندرويد) يعمل `HttpURLConnection` مع localhost بشكل طبيعي.
+2. **الـ Gradle daemon IPC محظور لنفس السبب** (الـ daemon يبدأ ثم يموت فوراً: `Connection reset by peer`؛ ولا سجلات daemon)، رغم أن loopback نفسه يعمل (مُتحقق بـ curl). لذلك: **البناء الرسمي يبقى Gradle** (يعمل في CI كما في ArDroid)، والتحقق المحلي هنا يتم عبر `tools/verify-local.sh` (kotlinc + aapt2 + d8 + apksigner، كما في المرحلة ٠). نسخة Gradle المحلية مثبّتة في `~/tools/gradle-9.8.2`، وإعدادات البروكسي في `~/.gradle/gradle.properties` (خارج المشروع).
+
+## خطوات الهاتف
+
+انظر [PHONE_STEPS.md](PHONE_STEPS.md) — تشغيل الخدمة في MT Manager، وتشغيل الفاحص في التطبيق، وإرسال القائمة الحية.
+
+## حالة المرحلة ١
+
+- [x] هيكل المشروع + عميل MCP + شاشة الفحص.
+- [x] البناء والاختبارات محلياً عبر `tools/verify-local.sh` (kotlinc + aapt2 + d8 + apksigner) — كل الاختبارات تمر (9 اختبارات: 4 للعميل + 5 لاختبار البوابة)؛ وفحص أسماء الأدوات ضد القائمة الحية يمر.
+- [x] **القائمة الحية وصلت من الهاتف** (67 أداة، MT MCP 0.2.0، جُلبت 2026-11-14 19:14:59) — أكدت رقم 67 من الفيديو؛ وصححت أن فك Java موجود (`mt_apk_dex_read_pseudocode`) خلاف الموثق سابقاً.
+- [x] **زر «اختبار البوابة»** في التطبيق: يفتح `com.musaed.test.clear` عبر MCP ويقرأ مخطط `PremiumGate`، ويحفظ النتيجة في `gate_test.txt` ويضمّها للمشاركة.
+- [ ] التبادل الحي ضد خادم وهمي من JVM — **متعذر في هذه الحاوية** (حظر sandbox لاتصالات TCP من JVM، انظر أعلاه)؛ يعمل على آلة تطوير عادية وعلى الهاتف.
+- [ ] **بوابة القبول: فتح APK حقيقي عبر MCP وقراءة مخطط كلاس واحد على الأقل من الجهاز** — بانتظار تشغيل زر «اختبار البوابة» على الهاتف وإرسال `gate_test.txt`.

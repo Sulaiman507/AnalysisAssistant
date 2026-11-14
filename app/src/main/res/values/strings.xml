@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">مساعد التحليل</string>
+    <string name="status_not_checked">لم يُختبر الاتصال بخدمة MT MCP بعد.</string>
+    <string name="status_fetching">جارٍ الاتصال بخدمة MT MCP…</string>
+    <string name="status_ok">تم الاتصال ✓ — %1$d أداة من %2$s (%3$s)</string>
+    <string name="status_failed">فشل الاتصال: %1$s</string>
+    <string name="fetch_tools">جلب قائمة الأدوات</string>
+    <string name="share_list">مشاركة القائمة</string>
+    <string name="gate_test">اختبار البوابة</string>
+    <string name="status_gate_running">جارٍ اختبار البوابة…</string>
+    <string name="gate_ok">نجح اختبار البوابة ✓ — فُتح %1$s وقُرئ مخطط %2$s</string>
+    <string name="gate_failed">فشل اختبار البوابة: %1$s</string>
+    <string name="saved_to">حُفظت القائمة في:\n%1$s</string>
+    <string name="nothing_to_share">لا توجد قائمة بعد — اجلبها أولاً.</string>
+    <string name="how_to_start_service">شغّل خدمة APK MCP في MT Manager أولاً:\nالدرج الجانبي ← الأدوات ← APK MCP ← بدء، ثم أعد المحاولة.</string>
+</resources>

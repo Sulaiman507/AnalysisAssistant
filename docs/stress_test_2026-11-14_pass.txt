@@ -1,0 +1,30 @@
+اختبار إجهاد طبقة الأدوات — مساعد التحليل (المرحلة ٢)
+التطبيق الهدف: com.hecorat.screenrecorder.free
+مساحة العمل: eslfq0kv
+عدد ملفات DEX: 0
+الاستدعاءات: 20/20 ناجحة (المطلوب ٢٠/٢٠)
+اكتمال السجل (الخطوات ١–٢٠): مكتمل ✓
+حزمة الكلاس الأول: dex_class:La/a; — 2 دالة، 1 مرجع، مقتطعة: لا
+النتيجة: ناجح ✓ — مرّت البوابة
+
+الخطوات:
+  ١ — mt_apk_list_installed_apps: ناجحة ✓ (الهدف: com.hecorat.screenrecorder.free)
+  2 — mt_apk_workspace_open: ناجحة ✓
+  3 — mt_apk_list_entries: ناجحة ✓
+  4 — mt_apk_read_signature: ناجحة ✓
+  5 — mt_apk_search: ناجحة ✓
+  6 — mt_apk_search: ناجحة ✓
+  7 — mt_apk_search: ناجحة ✓
+  8 — mt_apk_dex_list_classes: ناجحة ✓
+  9 — mt_apk_continue: ناجحة ✓
+  10 — mt_apk_dex_read_class_outline: ناجحة ✓
+  11 — mt_apk_dex_read_pseudocode: ناجحة ✓
+  12 — mt_apk_dex_read_pseudocode: ناجحة ✓
+  13 — mt_apk_dex_xref: ناجحة ✓
+  14 — mt_apk_dex_read_class_outline: ناجحة ✓
+  15 — mt_apk_dex_read_pseudocode: ناجحة ✓
+  16 — mt_apk_dex_xref: ناجحة ✓
+  17 — mt_apk_resource_list: ناجحة ✓
+  18 — mt_apk_search: ناجحة ✓
+  19 — mt_apk_read_text: ناجحة ✓
+  20 — mt_apk_dex_list_classes: ناجحة ✓

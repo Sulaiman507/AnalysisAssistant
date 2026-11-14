@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<link rel="icon" href="data:," />
+<title>خطة بناء أداة مساعد التحليل</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f6f4ee; --surface:#fffdf8; --surface2:#efece2; --ink:#1c2420; --ink2:#4a554e; --ink3:#71807a;
+    --line:#ddd6c4; --line2:#c9c0a6;
+    --brand:#14503c; --brand-deep:#0d3a2b; --brand-soft:#e3efe8;
+    --gold:#a8842c; --gold-soft:#f3ead2;
+    --red:#9c2f24; --red-soft:#f7e6e2;
+    --amber:#8a5d10; --amber-soft:#f6ecd4;
+    --blue:#1f4e79; --blue-soft:#e4ecf4;
+    --code-bg:#12211b; --code-ink:#e8f0e9;
+    --shadow:0 1px 2px rgba(28,36,32,.06),0 8px 24px rgba(28,36,32,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#10140f; --surface:#171c16; --surface2:#1e241d; --ink:#e9ebe2; --ink2:#b9c0b0; --ink3:#8b968a;
+      --line:#2e362c; --line2:#414c3e;
+      --brand:#7fc7a5; --brand-deep:#a8dcc2; --brand-soft:#1d2f26;
+      --gold:#d3ab55; --gold-soft:#2c2716;
+      --red:#e79a8d; --red-soft:#33201c;
+      --amber:#dcbc7d; --amber-soft:#2e2817;
+      --blue:#9dbede; --blue-soft:#1b2836;
+      --code-bg:#0a120e; --code-ink:#dcebe0;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} *{transition:none!important} }
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"IBM Plex Sans Arabic",system-ui,sans-serif;font-size:16.5px;line-height:1.85}
+  button,[role="button"],select,summary,input:not([type="checkbox"],[type="radio"]){min-height:2.25rem}
+  .mono{font-family:"JetBrains Mono",monospace;direction:ltr;unicode-bidi:embed;font-size:.86em}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 20px 72px}
+  h1,h2,h3{font-family:"Noto Kufi Arabic","IBM Plex Sans Arabic",sans-serif;line-height:1.5;margin:0}
+  a{color:var(--brand)}
+
+  /* ===== Hero ===== */
+  .hero{padding:52px 0 8px}
+  .hero .kicker{display:inline-block;font-size:.82rem;font-weight:700;color:var(--brand);
+    background:var(--brand-soft);border:1px solid var(--line);border-radius:999px;padding:2px 14px}
+  .hero h1{font-size:clamp(1.75rem,4.6vw,2.6rem);font-weight:800;margin:18px 0 12px;color:var(--ink)}
+  .hero h1 .accent{color:var(--brand)}
+  .hero p.lead{font-size:1.08rem;color:var(--ink2);max-width:46rem;margin:0}
+  .hero p.lead strong{color:var(--ink)}
+  .decision{margin-top:26px;background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--gold);
+    border-radius:10px;padding:20px 22px;box-shadow:var(--shadow)}
+  .decision h2{font-size:1.02rem;margin-bottom:6px}
+  .decision p{margin:0;color:var(--ink2)}
+  .decision p strong{color:var(--ink)}
+
+  /* ===== Nav ===== */
+  nav.toc{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line);
+    margin:30px -20px 0;padding:10px 20px;display:flex;gap:6px;flex-wrap:wrap}
+  nav.toc a{color:var(--ink2);text-decoration:none;font-size:.88rem;font-weight:600;
+    padding:6px 12px;border-radius:8px;min-height:36px;display:inline-flex;align-items:center}
+  nav.toc a:hover{background:var(--surface2);color:var(--ink)}
+
+  section{padding-top:52px}
+  .sec-head{margin-bottom:18px}
+  .sec-head .num{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;
+    background:var(--brand);color:#fff;font-family:"Noto Kufi Arabic",sans-serif;font-weight:700;font-size:.95rem;margin-bottom:10px}
+  @media (prefers-color-scheme: dark){ .sec-head .num{color:#0d1f16} }
+  .sec-head h2{font-size:1.45rem;font-weight:700}
+  .sec-head p{color:var(--ink2);margin:6px 0 0;max-width:44rem}
+
+  /* ===== Compare ===== */
+  .table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface);box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;min-width:640px;font-size:.95rem}
+  th,td{padding:12px 16px;text-align:right;vertical-align:top;border-bottom:1px solid var(--line)}
+  thead th{background:var(--surface2);font-family:"Noto Kufi Arabic",sans-serif;font-size:.9rem}
+  tbody tr:last-child td{border-bottom:none}
+  td.dim{color:var(--ink2)}
+  .tag{display:inline-block;font-size:.76rem;font-weight:700;border-radius:6px;padding:1px 9px;white-space:nowrap}
+  .tag.bad{background:var(--red-soft);color:var(--red)}
+  .tag.good{background:var(--brand-soft);color:var(--brand)}
+  .tag.mid{background:var(--amber-soft);color:var(--amber)}
+
+  /* ===== Principles ===== */
+  .principles{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
+  .principle{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;box-shadow:var(--shadow)}
+  .principle h3{font-size:1rem;margin-bottom:4px}
+  .principle h3 .n{color:var(--gold);font-family:"JetBrains Mono",monospace;font-size:.85rem;margin-left:6px}
+  .principle p{margin:0;color:var(--ink2);font-size:.95rem}
+
+  /* ===== Flow ===== */
+  .flow{display:flex;flex-direction:column;gap:0}
+  .flow-step{display:flex;gap:16px}
+  .flow-rail{display:flex;flex-direction:column;align-items:center;flex:0 0 38px}
+  .flow-dot{width:38px;height:38px;border-radius:50%;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;
+    font-family:"Noto Kufi Arabic",sans-serif;font-weight:700;font-size:.95rem;flex:0 0 auto}
+  @media (prefers-color-scheme: dark){ .flow-dot{color:#0d1f16} }
+  .flow-line{width:2px;flex:1;background:var(--line2);margin:4px 0}
+  .flow-card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:16px;flex:1;box-shadow:var(--shadow)}
+  .flow-card h3{font-size:1.02rem;margin-bottom:2px}
+  .flow-card p{margin:0;color:var(--ink2);font-size:.95rem}
+  .flow-card .tools{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+  .flow-card .tools span{font-size:.78rem;background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:1px 10px;color:var(--ink2)}
+
+  /* ===== Prompt layers ===== */
+  .layers{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  .layer{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;box-shadow:var(--shadow)}
+  .layer h3{font-size:.98rem;margin-bottom:4px}
+  .layer h3 .lid{font-family:"JetBrains Mono",monospace;font-size:.75rem;color:var(--gold);display:block;direction:ltr;text-align:right}
+  .layer p{margin:0;color:var(--ink2);font-size:.93rem}
+  .layer ul{margin:6px 0 0;padding-inline-start:18px;color:var(--ink2);font-size:.93rem}
+
+  .prompt-box{margin-top:22px;border:1px solid var(--line2);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+  .prompt-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface2);
+    border-bottom:1px solid var(--line);padding:10px 16px;flex-wrap:wrap}
+  .prompt-bar .t{font-family:"Noto Kufi Arabic",sans-serif;font-weight:700;font-size:.95rem}
+  .prompt-bar .t small{display:block;font-family:"IBM Plex Sans Arabic",sans-serif;font-weight:400;color:var(--ink2);font-size:.8rem}
+  #copyBtn{background:var(--brand);color:#fff;border:none;border-radius:8px;padding:8px 20px;font-family:inherit;
+    font-weight:700;font-size:.92rem;cursor:pointer;min-height:40px}
+  @media (prefers-color-scheme: dark){ #copyBtn{color:#0d1f16} }
+  #copyBtn:active{transform:translateY(1px)}
+  #copyBtn.done{background:var(--gold)}
+  pre#promptText{margin:0;background:var(--code-bg);color:var(--code-ink);padding:22px 20px;
+    font-family:"IBM Plex Sans Arabic",system-ui,sans-serif;font-size:.9rem;line-height:1.95;
+    white-space:pre-wrap;word-break:break-word;max-height:560px;overflow:auto}
+  pre#promptText .h{color:#d3ab55;font-weight:700}
+  .prompt-note{margin-top:10px;color:var(--ink3);font-size:.88rem}
+
+  /* ===== Simulator ===== */
+  .sim{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px;box-shadow:var(--shadow)}
+  .sim .opts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px}
+  .sim .opts button{font-family:inherit;font-size:.93rem;font-weight:600;cursor:pointer;border:1px solid var(--line2);
+    background:var(--surface2);color:var(--ink);border-radius:9px;padding:9px 16px;min-height:44px}
+  .sim .opts button[aria-pressed="true"]{background:var(--brand);color:#fff;border-color:var(--brand)}
+  @media (prefers-color-scheme: dark){ .sim .opts button[aria-pressed="true"]{color:#0d1f16} }
+  .sim-out{margin-top:14px;border-top:1px dashed var(--line2);padding-top:14px}
+  .sim-out h3{font-size:1rem;margin-bottom:6px}
+  .sim-out ol{margin:0;padding-inline-start:22px;color:var(--ink2)}
+  .sim-out ol strong{color:var(--ink)}
+  .sim-out .verdict{margin-top:12px;border-radius:8px;padding:10px 14px;font-size:.94rem}
+  .verdict.local{background:var(--brand-soft);color:var(--ink)}
+  .verdict.server{background:var(--red-soft);color:var(--ink)}
+  .verdict.mixed{background:var(--amber-soft);color:var(--ink)}
+
+  /* ===== Phases ===== */
+  .phase{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin-bottom:12px;box-shadow:var(--shadow);overflow:hidden}
+  .phase summary{cursor:pointer;list-style:none;padding:16px 20px;display:flex;align-items:center;gap:14px;min-height:56px}
+  .phase summary::-webkit-details-marker{display:none}
+  .phase .pnum{flex:0 0 auto;width:36px;height:36px;border-radius:9px;background:var(--brand-soft);color:var(--brand);
+    display:flex;align-items:center;justify-content:center;font-family:"Noto Kufi Arabic",sans-serif;font-weight:800}
+  .phase .ptitle{font-family:"Noto Kufi Arabic",sans-serif;font-weight:700;font-size:1.02rem;flex:1}
+  .phase .pdur{font-size:.8rem;color:var(--ink3);white-space:nowrap}
+  .phase .chev{color:var(--ink3);transition:transform .2s}
+  .phase[open ] .chev{transform:rotate(180deg)}
+  .phase .body{padding:4px 20px 20px 20px;border-top:1px solid var(--line)}
+  .phase .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:12px}
+  .phase h4{font-family:"Noto Kufi Arabic",sans-serif;font-size:.9rem;margin:0 0 6px;color:var(--brand)}
+  .phase ul{margin:0;padding-inline-start:18px;color:var(--ink2);font-size:.94rem}
+  .gate{margin-top:14px;background:var(--gold-soft);border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:.93rem}
+  .gate strong{color:var(--amber)}
+
+  /* ===== Lists & misc ===== */
+  .plain-list{margin:0;padding-inline-start:20px;color:var(--ink2)}
+  .plain-list li{margin-bottom:6px}
+  .plain-list strong{color:var(--ink)}
+  .two-col{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;box-shadow:var(--shadow)}
+  .card h3{font-size:1rem;margin-bottom:8px}
+  .card ul{margin:0;padding-inline-start:18px;color:var(--ink2);font-size:.94rem}
+  .open-q li{margin-bottom:10px}
+  .src-list{font-size:.9rem;color:var(--ink2)}
+  .src-list li{margin-bottom:8px;word-break:break-word}
+  footer{margin-top:56px;border-top:1px solid var(--line);padding-top:18px;color:var(--ink3);font-size:.88rem}
+  @media (max-width:560px){
+    .hero{padding-top:36px}
+    .phase .pdur{display:none}
+    th,td{padding:10px 12px}
+  }
+  /* ===== Tools guide ===== */
+  #tools table{min-width:1060px}
+  #tools td:first-child{white-space:nowrap}
+  .tool-names{min-width:235px}
+  .tool-names .mono{display:block;font-size:.8rem;margin-bottom:4px;white-space:nowrap;color:var(--ink)}
+  .tool-names .mono:last-child{margin-bottom:0}
+  .proto-link{display:inline-block;font-size:.76rem;font-weight:700;border-radius:6px;padding:1px 9px;background:var(--blue-soft);color:var(--blue);margin:2px 0 2px 4px;white-space:nowrap}
+  .sim-link{display:inline-block;font-size:.76rem;font-weight:700;border-radius:6px;padding:1px 9px;background:var(--gold-soft);color:var(--amber);margin:2px 0 2px 4px;white-space:nowrap}
+  .tools-note{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-top:4px solid var(--gold);border-radius:10px;padding:16px 20px;box-shadow:var(--shadow)}
+  .tools-note h3{font-size:.98rem;margin-bottom:6px}
+  .tools-note p{margin:0;color:var(--ink2);font-size:.95rem}
+  .tools-note p strong{color:var(--ink)}
+  .tools-note p + p{margin-top:8px}
+
+  /* Phone: wide tables reflow into stacked rows instead of sideways scroll */
+  @media (max-width:680px){
+    .table-scroll{overflow-x:visible}
+    table{min-width:0}
+    #tools table{min-width:0}
+    #tools td:first-child{white-space:normal}
+    thead{display:none}
+    tbody tr{display:block;padding:10px 0;border-bottom:1px solid var(--line)}
+    tbody tr:last-child{border-bottom:none}
+    td{display:block;border-bottom:none;padding:4px 16px}
+    td:first-child{padding-top:8px}
+    td[colspan]{display:block}
+    #why td:nth-child(2)::before,#why td:nth-child(3)::before,
+    #bugs td:nth-child(2)::before,#bugs td:nth-child(3)::before,
+    #tools td:nth-child(2)::before,#tools td:nth-child(3)::before,
+    #tools td:nth-child(4)::before,#tools td:nth-child(5)::before{
+      display:block;font-family:"Noto Kufi Arabic",sans-serif;font-size:.78rem;font-weight:700;color:var(--brand);margin-bottom:2px}
+    #why td:nth-child(2)::before{content:"المحلل بالكلمات (grep)"}
+    #why td:nth-child(3)::before{content:"مساعد الذكاء الاصطناعي"}
+    #bugs td:nth-child(2)::before{content:"الوقاية"}
+    #bugs td:nth-child(3)::before{content:"الكشف والاسترداد"}
+    #tools td:nth-child(2)::before{content:"الأدوات الحقيقية"}
+    #tools td:nth-child(3)::before{content:"متى تُستخدم"}
+    #tools td:nth-child(4)::before{content:"كيف تُستخدم"}
+    #tools td:nth-child(5)::before{content:"عند الفشل"}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ================= HERO ================= -->
+  <header class="hero">
+    <span class="kicker">خطة التنفيذ — النسخة الأولى</span>
+    <h1>مساعد التحليل الذكي: <span class="accent">الذكاء الاصطناعي هو المحلّل</span>، لا البحث بالكلمات</h1>
+    <p class="lead">أداة أندرويد عربية تتصل بخدمة <span class="mono">APK MCP</span> في <strong>MT Manager</strong>، وتقرأ كود أي تطبيق عبر نموذج ذكاء اصطناعي يفهم <strong>سلوك الكود لا أسماءه</strong> — فيحدد أين يقع فحص الميزات المدفوعة، وهل هو محلي قابل للتعديل أم يعتمد على خادم، ثم يقدّم تقريراً موثّقاً بالأدلة وخطة تعديل آمنة قابلة للتراجع.</p>
+    <div class="decision">
+      <h2>القرار الذي تُبنى عليه الخطة كلها</h2>
+      <p>المحلّل البسيط القائم على كلمات بحث مثل <span class="mono">isPremium</span> يفشل أمام التشويش (<span class="mono">R8/ProGuard</span>) الذي يحوّل الأسماء إلى حروف مثل <span class="mono">a()</span>. لذلك: <strong>المساعد الذكي هو الأساس</strong>، والفحص السريع بالكلمات خطوة تمهيدية مجانية <em>داخله</em> — إن نجحت اختصرت الطريق، وإن فشلت أو كان الكود مبهماً انتقل التحليل للنموذج دون أن تتوقف الأداة. وقلب المشروع كله هو الـ <strong>System Prompt</strong>: هو ما يفرض على النموذج الانضباط والأدلة والتحقق، وهو ما يقلّل الأخطاء والـ bugs — لذا له قسم كامل ونصّ كامل جاهز للنسخ في هذه الخطة.</p>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="أقسام الخطة">
+    <a href="#why">لماذا الذكاء أولاً؟</a>
+    <a href="#principles">المبادئ</a>
+    <a href="#arch">المعمارية</a>
+    <a href="#tools">دليل أدوات MT MCP</a>
+    <a href="#prompt">الـ System Prompt</a>
+    <a href="#sim">محاكاة القرار</a>
+    <a href="#phases">مراحل التنفيذ</a>
+    <a href="#bugs">منع الأخطاء</a>
+    <a href="#tests">الاختبار والقبول</a>
+    <a href="#open">القرارات المثبّتة</a>
+    <a href="#sources">المصادر</a>
+  </nav>
+
+  <!-- ================= WHY ================= -->
+  <section id="why">
+    <div class="sec-head">
+      <span class="num">١</span>
+      <h2>لماذا الذكاء الاصطناعي أساساً؟</h2>
+      <p>المقارنة التي حسمت القرار — بناءً على نقطة التشويش التي أثرتَها، وعلى ما وجده بحث المشاريع المشابهة.</p>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>المعيار</th><th>المحلل بالكلمات (grep)</th><th>مساعد الذكاء الاصطناعي</th></tr></thead>
+        <tbody>
+          <tr><td><strong>الكود المبهم (R8)</strong></td><td class="dim"><span class="tag bad">ينهار</span> الأسماء تصبح <span class="mono">a.b.c()</span> والبحث يرجع صفراً</td><td><span class="tag good">يصمد</span> يقرأ السلوك: دالة تقرأ من <span class="mono">SharedPreferences</span> أو قاعدة بيانات وتقفل واجهة = بوابة دفع مهما كان اسمها</td></tr>
+          <tr><td><strong>مكتبات الدفع</strong></td><td class="dim"><span class="tag mid">جزئي</span> يجد اسم المكتبة إن لم تُبهم</td><td><span class="tag good">يفهم المسار</span> يتعرّف على <span class="mono">RevenueCat</span> و<span class="mono">BillingClient</span> وغيرهما ويتتبع أين تُستهلك حالة الاشتراك</td></tr>
+          <tr><td><strong>التمييز محلي / خادم</strong></td><td class="dim"><span class="tag bad">لا يستطيع</span> وجود كلمة لا يعني أن الفحص محلي</td><td><span class="tag good">يستطيع غالباً</span> يتتبع مصدر القيمة: ثابت محلي؟ كاش؟ أم ردّ شبكة موقّع من الخادم؟</td></tr>
+          <tr><td><strong>خطر الخطأ الواثق</strong></td><td class="dim"><span class="tag good">منخفض</span> نتيجته حرفية: وجد أو لم يجد</td><td><span class="tag bad">حقيقي</span> قد يشير لدالة خاطئة بثقة — يُعالج ببروتوكول الأدلة والتحقق في الـ System Prompt (القسم ٥)</td></tr>
+          <tr><td><strong>التكلفة والاتصال</strong></td><td class="dim"><span class="tag good">مجاني وفوري</span> يعمل دون إنترنت</td><td><span class="tag mid">مدفوع وبطيء نسبياً</span> يحتاج مفتاح API ورصيداً وإنترنت، وكل تحليل يستهلك رموزاً</td></tr>
+          <tr><td><strong>الدليل في السوق</strong></td><td colspan="2" class="dim">بحث ١٤ نوفمبر ٢٠٢٦: لا مشروع واحد يجمع «تطبيق أندرويد + بحث تلقائي عن فحص Premium + مساعد ذكاء اصطناعي + تقرير» — وأقرب إجراء مكتوب للبحث بالكلمات هو مهارة <span class="mono">morphe-ai apk-analysis</span> (إجراء لنموذج وكيل، لا تطبيق)، وأقرب تطبيق فيه ذكاء اصطناعي مدمج هو <span class="mono">JsxposedX</span> لكنه بلا بحث تلقائي. وبالعربية: لا شيء إطلاقاً — الفجوة أوضح ما تكون هنا.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= PRINCIPLES ================= -->
+  <section id="principles">
+    <div class="sec-head">
+      <span class="num">٢</span>
+      <h2>مبادئ لا نتنازل عنها</h2>
+      <p>ستة مبادئ تحكم كل قرار في الخطة، وهي خط الدفاع الأول ضد الأخطاء قبل أي سطر كود.</p>
+    </div>
+    <div class="principles">
+      <div class="principle"><h3><span class="n">P1</span>لا ادعاء بلا دليل</h3><p>كل نتيجة في التقرير مرتبطة بدليل فعلي قرأته الأداة: كلاس ودالة وسطور Smali حقيقية جُلبت بأداة. ما لا دليل عليه يُكتب «غير مؤكد» صراحة، ولا يُخترع أبداً.</p></div>
+      <div class="principle"><h3><span class="n">P2</span>التحقق قبل التعديل</h3><p>لا يُقترح أي تعديل قبل التحقق من ثلاثة أشياء: أن الدالة هي فعلاً بوابة الفحص، وأن الفحص محلي، وأن التطبيق بلا حماية توقيع ستمنع التشغيل بعد التعديل.</p></div>
+      <div class="principle"><h3><span class="n">P3</span>التراجع دائماً ممكن</h3><p>الأداة لا تلمس النسخة الأصلية أبداً: كل عمل على نسخة، وكل تعديل موثّق (قبل/بعد)، وأي نسخة معدّلة تُبنى وتُختبَر إقلاعاً قبل أن تُعرض على المستخدم بوصفها «جاهزة».</p></div>
+      <div class="principle"><h3><span class="n">P4</span>الصمت خير من التخمين</h3><p>عند غياب الدليل أو تعارضه، النموذج ملزم أن يقول «لا أعرف بعد» ويطلب خطوة فحص إضافية — لا أن يملأ الفراغ باحتمال يقدّمه كحقيقة.</p></div>
+      <div class="principle"><h3><span class="n">P5</span>الحدود تُقال مبكراً</h3><p>إن كان الفحص على الخادم أو في كود أصلي (<span class="mono">native .so</span>) مشفّر، تُقال النتيجة في أول التقرير لا في آخره، ولا تُهدر رموز مدفوعة في مطاردة مستحيلة.</p></div>
+      <div class="principle"><h3><span class="n">P6</span>النموذج يقترح، والبرنامج يقرّر</h3><p>قرارات الحسم (موجود/غير موجود، محلي/خادم، آمن/خطر) تمرّ على مدقّق برمجي يفحص الأدلة آلياً قبل أن تصل للمستخدم — ثقة النموذج وحدها لا تكفي.</p></div>
+    </div>
+  </section>
+
+  <!-- ================= ARCHITECTURE ================= -->
+  <section id="arch">
+    <div class="sec-head">
+      <span class="num">٣</span>
+      <h2>معمارية الأداة</h2>
+      <p>ست طبقات، لكل طبقة وظيفة واحدة وحدود واضحة — حتى إذا أخطأت طبقة أمكن إصلاحها وحدها.</p>
+    </div>
+    <div class="flow">
+      <div class="flow-step"><div class="flow-rail"><div class="flow-dot">١</div><div class="flow-line"></div></div>
+        <div class="flow-card"><h3>الإدخال والفحص السريع</h3><p>يختار المستخدم ملف APK. قبل أي استدعاء مدفوع للنموذج: قراءة الـ Manifest والحزم وعدد ملفات DEX، ثم مسح كلمات مجاني (<span class="mono">premium, vip, subscri, billing, purchase</span> وأسماء مكتبات الدفع). النتيجة تُغذّي النموذج كتلميح افتتاحي — لا كحكم.</p><div class="tools"><span>Manifest</span><span>مسح كلمات مجاني</span><span>كشف التشويش: نسبة الأسماء القصيرة</span></div></div></div>
+      <div class="flow-step"><div class="flow-rail"><div class="flow-dot">٢</div><div class="flow-line"></div></div>
+        <div class="flow-card"><h3>طبقة الأدوات (MT MCP)</h3><p>اتصال بخدمة <span class="mono">APK MCP</span> في MT Manager عبر <span class="mono">http://127.0.0.1:8787/mcp</span>. السطح الحقيقي كما أثبتته القائمة الحية من الجهاز (١٤ نوفمبر ٢٠٢٦، إصدار الخادم <span class="mono">MT MCP 0.2.0</span>): <strong>٦٧ أداة</strong> — ٣٧ أداة <span class="mono">mt_apk_*</span> في سبع فئات (فتح واختيار، قراءة وبحث، تحليل DEX، موارد، تحليل أصلي ثابت، تعديل وبناء، تنظيف)، و٣٠ أداة مساندة خارج بروتوكول التحليل (٢٣ أداة ملفات <span class="mono">mt_file_*</span> و٧ أدوات أرشيف <span class="mono">mt_zip_*</span>). حدود صريحة يجب أن تعرفها الأداة: قراءة منطق DEX تكون <strong>بالكود الشبهي Java أولاً</strong> عبر <span class="mono">mt_apk_dex_read_pseudocode</span> — فهو الأداة المفضّلة أولاً — وSmali عبر <span class="mono">mt_apk_read_text</span> للتعليمات الدقيقة أو التعديل فقط؛ وتعديل <span class="mono">resources.arsc</span> يشمل الإضافة والتعديل والحذف لا العناصر الموجودة فقط؛ والتحليل الأصلي ثابت (فك تجميع ورسم تدفق تحكم) بلا كود شبه Java.</p><div class="tools"><span>بحث DEX</span><span>مخطط كلاس</span><span>كود Java شبهي (Pseudocode)</span><span>مراجع متقاطعة Xref</span><span>قراءة Smali</span><span>تعديل وبناء وتوقيع</span></div></div></div>
+      <div class="flow-step"><div class="flow-rail"><div class="flow-dot">٣</div><div class="flow-line"></div></div>
+        <div class="flow-card"><h3>بنّاء السياق</h3><p>الطبقة التي تحمي النموذج من نفسه: لا يُرمى ملف DEX كاملاً في المحادثة. تُبنى حزم سياق صغيرة مركّزة (كلاس واحد + مراجعه + من يستدعيه)، مع ذاكرة ملخصات لما قُرئ، وسقف رموز لكل خطوة. سياق نظيف = هلوسة أقل وكلفة أقل.</p><div class="tools"><span>تقطيع حسب الكلاس</span><span>ملخصات تراكمية</span><span>سقف رموز لكل خطوة</span></div></div></div>
+      <div class="flow-step"><div class="flow-rail"><div class="flow-dot">٤</div><div class="flow-line"></div></div>
+        <div class="flow-card"><h3>محرك التحليل (النموذج + الـ System Prompt)</h3><p>حلقة وكيل منضبطة: النموذج يطلب أداة واحدة في كل مرة (بحث، قراءة، تتبّع مرجع)، يفسّر النتيجة، ويسجّل «بطاقة دليل» لكل اكتشاف، حتى يكتمل بروتوكول التحليل في القسم ٥ أو تُستوفى شروط التوقف.</p><div class="tools"><span>خطوة واحدة في كل مرة</span><span>بطاقات أدلة</span><span>شروط توقف صريحة</span></div></div></div>
+      <div class="flow-step"><div class="flow-rail"><div class="flow-dot">٥</div><div class="flow-line"></div></div>
+        <div class="flow-card"><h3>المدقّق البرمجي</h3><p>قبل عرض أي نتيجة: يتحقق كودٌ لا نموذج — هل الكلاس والدالة المذكوران موجودان فعلاً في مخرجات الأدوات؟ هل كل ادعاء له بطاقة دليل؟ هل درجة الثقة محسوبة من الأدلة لا من إحساس النموذج؟ أي فشل يعيد التحليل للخطوة الناقصة بدل عرض نتيجة معيبة.</p><div class="tools"><span>مطابقة أسماء مع المخرجات</span><span>اكتمال الأدلة</span><span>حساب ثقة آلي</span></div></div></div>
+      <div class="flow-step"><div class="flow-rail"><div class="flow-dot">٦</div></div>
+        <div class="flow-card"><h3>التقرير وخطة التعديل والبناء الآمن</h3><p>تقرير عربي منظم (النتيجة أولاً، ثم الأدلة، ثم خطة التعديل خطوة بخطوة مع المخاطر). التعديل نفسه اختياري ومنفصل: يطبَّق على نسخة، تُزال حماية التوقيع أولاً إن وُجدت (الدرس الذي أسقط نسخة الفيديو التجريبية)، ثم بناء وتوقيع واختبار إقلاع — ولا تُسمى النسخة «تعمل» إلا بعد نجاح الاختبار.</p><div class="tools"><span>تقرير موثّق</span><span>تعديل على نسخة</span><span>اختبار إقلاع إلزامي</span></div></div></div>
+    </div>
+  </section>
+
+  <!-- ================= TOOLS GUIDE ================= -->
+  <section id="tools">
+    <div class="sec-head">
+      <span class="num">٤</span>
+      <h2>دليل أدوات MT MCP: متى وكيف</h2>
+      <p>الدليل العملي لطبقة الأدوات في المعمارية: الفئات السبع لسطح <span class="mono">APK MCP</span> <strong>بأسماء أدواتها الحقيقية كما جُلبت حياً من الجهاز</strong> (٦٧ أداة، ١٤ نوفمبر ٢٠٢٦)، متى تُستدعى كل فئة داخل بروتوكول التحليل، وكيف تُستخدم بلا إهدار سياق أو رموز، وماذا يحدث عند فشلها — مربوطاً بخطوات البروتوكول في الـ System Prompt (القسم ٥) وبحالات المحاكاة (القسم ٦).</p>
+    </div>
+
+    <div class="tools-note" style="margin-top:0;margin-bottom:14px">
+      <h3>الأسماء الآن حقيقية — جُلبت من الجهاز نفسه</h3>
+      <p>جُلبت هذه القائمة حياً من جهاز سليمان بتاريخ <strong>١٤ نوفمبر ٢٠٢٦</strong> (الساعة ١٩:١٤)، وإصدار الخادم <span class="mono">MT MCP 0.2.0</span>، وعددها <strong>٦٧ أداة</strong> — فادعاء الفيديو المرجعي (٦٧ أداة) ثبت أنه <strong>صحيح</strong>، ورقم ٢٦ أداة في المصادر الثانوية كان جزئياً وقديماً. الأسماء في الجدول أدناه منسوخة حرفياً من تلك القائمة، وهي المرجع الوحيد لعقد الأدوات في البرومبت. التوزيع: <strong>٣٧ أداة <span class="mono">mt_apk_*</span></strong> على الفئات السبع أدناه، و<strong>٣٠ أداة مساندة</strong> (٢٣ أداة ملفات <span class="mono">mt_file_*</span> و٧ أدوات أرشيف <span class="mono">mt_zip_*</span>) خارج بروتوكول التحليل — انظر خاتمة هذا القسم.</p>
+    </div>
+
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>الفئة الموثقة</th><th>الأدوات الحقيقية</th><th>متى تُستخدم</th><th>كيف تُستخدم</th><th>عند الفشل</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>١ — فتح واختيار</strong></td>
+            <td class="tool-names"><span class="mono">mt_apk_workspace_open</span><span class="mono">mt_apk_list_available_apks</span><span class="mono">mt_apk_list_installed_apps</span><span class="mono">mt_apk_workspace_list</span></td>
+            <td class="dim"><span class="proto-link">قبل الخطوة ٠</span><span class="sim-link">كل الحالات: شرط مسبق</span> بداية كل جلسة تحليل، وقبل أي استدعاء مدفوع للنموذج: فتح الـ APK المستهدف وجعله هدف الجلسة الوحيد، مع فحص الاتصال الافتتاحي بالخدمة.</td>
+            <td class="dim">الخدمة تُشغَّل يدوياً أولاً من MT Manager (الدرج الجانبي ← الأدوات ← APK MCP ← بدء) — لا تُشغَّل برمجياً. ثم يُفتح ملف واحد ويُختار هدفاً، وتُسجَّل بياناته الأولية (الحزمة، عدد ملفات DEX) في سجلّ الجلسة قبل أي خطوة تالية.</td>
+            <td class="dim">خدمة مطفأة أو لا ردّ على <span class="mono">127.0.0.1:8787</span>: توقّف فوري برسالة واحدة فيها خطوة التشغيل اليدوي الدقيقة — لا أخطاء مبهمة من النموذج، ولا استهلاك رموز. ملف تالف أو غير مدعوم: إنهاء صريح للجلسة وسببه.</td>
+          </tr>
+          <tr>
+            <td><strong>٢ — قراءة وبحث</strong></td>
+            <td class="tool-names"><span class="mono">mt_apk_search</span><span class="mono">mt_apk_list_entries</span><span class="mono">mt_apk_read_text</span><span class="mono">mt_apk_read_bytes</span><span class="mono">mt_apk_read_signature</span><span class="mono">mt_apk_continue</span></td>
+            <td class="dim"><span class="proto-link">الخطوة ٠: الفرز</span><span class="proto-link">الخطوة ١: الاكتشاف</span><span class="sim-link">أسماء واضحة</span><span class="sim-link">مبهم بـ R8</span> قراءة الـ Manifest والحزم في الفرز، ثم البحث بالكلمات وأسماء مكتبات الدفع في الاكتشاف — وهي أدوات الفحص السريع المجاني نفسه.</td>
+            <td class="dim">بحث واحد محدد في كل خطوة، بكلمات ومكتبات معلومة (<span class="mono">premium, vip, subscri, billing</span> و<span class="mono">RevenueCat, BillingClient</span>…)، ونتيجته تُحفظ حرفياً في سجلّ الجلسة بوصفها بطاقة دليل أو تلميحاً — لا حكماً. وجدت نتيجة؟ تُغذّي الخطوة التالية. لم تجد؟ هذه معلومة أيضاً.</td>
+            <td class="dim">نتيجة فارغة <strong>لا تعني «لا يوجد فحص»</strong>: جرّب زاوية واحدة بديلة كحد أقصى (مرادف أو اسم مكتبة)، ثم انتقل للبحث السلوكي في الخطوة ٢ — خصوصاً إذا كان مؤشر التشويش متوسطاً أو عالياً. خطأ من الأداة: يُسجَّل، ولا يُعلَّق التحليل كله عليه.</td>
+          </tr>
+          <tr>
+            <td><strong>٣ — تحليل DEX</strong><br><span style="color:var(--ink3);font-size:.86rem">مخطط كلاس · كود Java شبهي · مراجع متقاطعة · قراءة Smali</span></td>
+            <td class="tool-names"><span class="mono">mt_apk_dex_list_classes</span><span class="mono">mt_apk_dex_read_class_outline</span><span class="mono">mt_apk_dex_read_pseudocode</span><span class="mono">mt_apk_dex_xref</span></td>
+            <td class="dim"><span class="proto-link">الخطوة ٢: البحث السلوكي</span><span class="proto-link">الخطوة ٣: تتبّع مصدر القيمة</span><span class="proto-link">الخطوة ٤: فحص التوقيع</span><span class="sim-link">مبهم بـ R8</span><span class="sim-link">مكتبة دفع</span><span class="sim-link">فحص على الخادم</span><span class="sim-link">فحص + حماية توقيع</span> قلب التحليل كله: فهم بنية الكلاس، ومن يستدعي الدالة المرشحة، وقراءة منطقها بالكود الشبهي Java (وSmali عند الحاجة للدقة أو التعديل)، وتتبّع مصدر قيمتها.</td>
+            <td class="dim">بالترتيب: مخطط الكلاس أولاً، ثم منطق <strong>دالة واحدة</strong> بالكود الشبهي عبر <span class="mono">mt_apk_dex_read_pseudocode</span> (بأسلوب <span class="mono">readable</span> أولاً) — فهو الأداة المفضّلة أولاً لمنطق الكلاس والدالة — ثم مراجعها المتقاطعة (من يستدعيها ومن تستدعيه) — حزمة سياق صغيرة لكلاس واحد في بنّاء السياق، لا ملف DEX كاملاً. ولا يُلجأ إلى Smali عبر <span class="mono">mt_apk_read_text</span> إلا عند الحاجة لتعليمات دقيقة أو للتعديل، أو عند فشل توليد الكود الشبهي، أو بقاء المنطق غامضاً بعد قراءة صفحاته ذات الصلة — وهذا ترتيب الأداة نفسه كما تصفه وثائقها. الحكم على سلوك الدالة (نوع الإرجاع <span class="mono">Z</span>، مصدر القراءة، سلسلة الاستدعاء)، لا على اسمها.</td>
+            <td class="dim">مقتطف ناقص أو كلاس ضخم: ضيّق النطاق إلى دالة واحدة أو تتبّع مرجع واحد إضافي — محاولة بديلة واحدة. ما زال الدليل ناقصاً؟ النقطة تُصنَّف «غير مؤكد» ويُمنع بناء تصنيف أو خطة تعديل عليها؛ فتصنيف «محلي» بلا بطاقة دليل من تتبّع المصدر يرفضه المدقّق البرمجي.</td>
+          </tr>
+          <tr>
+            <td><strong>٤ — الموارد</strong></td>
+            <td class="tool-names"><span class="mono">mt_apk_resource_list</span><span class="mono">mt_apk_resource_read</span><span class="mono">mt_apk_resource_xref</span><span class="mono">mt_apk_resource_add</span><span class="mono">mt_apk_resource_edit</span><span class="mono">mt_apk_resource_delete</span></td>
+            <td class="dim"><span class="proto-link">الخطوة ١: الاكتشاف</span><span class="proto-link">الخطوة ٢: البحث السلوكي</span><span class="sim-link">مبهم بـ R8</span><span class="sim-link">مكتبة دفع</span> تحديد شاشات الترقية والدفع ونصوص الواجهة الظاهرة للمستخدم، لتكون نقطة الانطلاق العكسي نحو كود الفحص حين لا تنفع الأسماء.</td>
+            <td class="dim">قراءة الموارد الموجودة (سلاسل نصية، معرّفات شاشات وخطط أسعار) وربط النص الظاهر بكلاس واجهته، ثم الانتقال منه إلى أدوات تحليل DEX. والتعديل أوسع مما وثّقته المصادر الثانوية: يشمل إضافة عناصر وفاريانتات جديدة (<span class="mono">mt_apk_resource_add</span>) وتعديل القيم الموجودة وحذفها — داخل جلسة تعديل فقط.</td>
+            <td class="dim">نصوص مشفّرة أو موارد مبهمة لا تربط بشيء: لا تخمين — تُسجَّل كقيد، ويُكمل التحليل من DEX وحده. غياب شاشة ترقية أصلاً قرينة مبكرة على حالة «لا ميزات مدفوعة»، تُتحقق منها لاحقاً لا تُحسم بها وحدها.</td>
+          </tr>
+          <tr>
+            <td><strong>٥ — التحليل الأصلي الثابت</strong><br><span style="color:var(--ink3);font-size:.86rem">مكتبات <span class="mono">.so</span></span></td>
+            <td class="tool-names"><span class="mono">mt_apk_native_inspect</span><span class="mono">mt_apk_native_list_items</span><span class="mono">mt_apk_native_map_address</span><span class="mono">mt_apk_native_disassemble</span><span class="mono">mt_apk_native_xref</span><span class="mono">mt_apk_native_analyze_control_flow</span></td>
+            <td class="dim"><span class="proto-link">الخطوة ٣: تتبّع المصدر</span><span class="proto-link">الخطوة ٤: فحص الحمايات</span><span class="proto-link">شرط التوقف الشريف</span><span class="sim-link">فحص على الخادم</span> عند الاشتباه بأن قراراً حاسماً (منح الميزة، أو التحقق من التوقيع/السلامة) يعبر إلى مكتبة أصلية، أو عند اختفاء أثر الفحص من DEX كلياً.</td>
+            <td class="dim">فحص ثابت فقط — استيرادات وسلاسل ودوال مصرّفة — لتأكيد وجود العبور إلى الأصلي وتحديد موضعه كبطاقة دليل. الحدّ الموثّق صريح: لا كود شبه Java لهذه الأجزاء، فنتيجتها قرينة تصنيف لا شرح سلوك كامل.</td>
+            <td class="dim">ثبت أن القرار كله داخل <span class="mono">.so</span> بلا سطح تحليل كافٍ: يُفعَّل التوقف الشريف — النتيجة «حدّ أداة: الفحص في كود أصلي» في أول التقرير، بلا مطاردة مدفوعة الرموز وبلا ادعاء فهم غير موجود.</td>
+          </tr>
+          <tr>
+            <td><strong>٦ — تعديل وبناء وتوقيع</strong></td>
+            <td class="tool-names"><span class="mono">mt_apk_session_create</span><span class="mono">mt_apk_edit_text</span><span class="mono">mt_apk_patch_bytes</span><span class="mono">mt_apk_native_patch_instructions</span><span class="mono">mt_apk_native_patch_string</span><span class="mono">mt_apk_copy_entry</span><span class="mono">mt_apk_delete_target</span><span class="mono">mt_apk_session_check</span><span class="mono">mt_apk_build</span><span class="mono">mt_apk_install</span></td>
+            <td class="dim"><span class="proto-link">الخطوة ٦: خطة التعديل فقط</span><span class="sim-link">أسماء واضحة</span><span class="sim-link">فحص + حماية توقيع</span> لا تُستدعى أثناء التحليل أبداً؛ فقط بعد اكتمال الخطوتين ٣ و٤، وتصنيف مثبت «محلي»، وخطة تعديل معتمدة من المدقّق — وهي أدوات المرحلة ٦ من مراحل التنفيذ.</td>
+            <td class="dim">على <strong>نسخة عمل فقط</strong> — الأصل لا يُلمس. الترتيب إلزامي: معالجة فحص التوقيع أولاً إن وُجد (الخطوة ٤)، ثم التعديل الأدنى أثراً (دالة واحدة غالباً) موثّقاً قبل/بعد بصيغة Smali، ثم بناء وتوقيع، ثم اختبار إقلاع فعلي قبل أي وصف للنسخة بأنها «جاهزة».</td>
+            <td class="dim">فشل بناء أو توقيع أو إقلاع: النسخة لا تُعرض إطلاقاً، ويُوثَّق سبب الفشل في التقرير، والتراجع فوري لأن الأصل محفوظ. حالة «خادم صرف» لا تصل إلى هذه الفئة من الأساس — لا تعديل يُقترح لها.</td>
+          </tr>
+          <tr>
+            <td><strong>٧ — تنظيف وإدارة الجلسة</strong></td>
+            <td class="tool-names"><span class="mono">mt_apk_workspace_delete</span></td>
+            <td class="dim"><span class="proto-link">نهاية البروتوكول</span><span class="proto-link">سقف ٤٠ خطوة</span><span class="sim-link">كل الحالات: خاتمة</span> إغلاق كل جلسة — ناجحة أو متوقفة بشرف — وقبل أي بناء نهائي، وعند تبديل الـ APK الهدف، وعند الاقتراب من سقف الخطوات.</td>
+            <td class="dim">تنظيف ملفات العمل المؤقتة مع الاحتفاظ الكامل بسجلّ الجلسة وبطاقات الأدلة (هي مرجع المدقّق وتقرير الجودة)، وتلخيص ما ثبت وما بقي غير مؤكد. لا جلسة جديدة تبدأ على بقايا هدف سابق.</td>
+            <td class="dim">امتلاء سياق أو تعارض بقايا بين هدفين: أغلق الجلسة ولخّص، ثم ابدأ نظيفاً. فقدان أي مخرَج من السجلّ عند هذا التنظيف فشل في بوابة المرحلة ٢ — السجلّ لا يُضحّى به من أجل التنظيف.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tools-note">
+      <h3>اكتمل الإملاء — والأدوات الثلاثون الباقية خارج البروتوكول</h3>
+      <p><strong>الإملاء (أُنجز ١٤ نوفمبر ٢٠٢٦):</strong> جلب عميل MCP قائمة الأدوات الفعلية من الجهاز نفسه، ونُسخت الأسماء حرفياً في الخانة المقابلة لفئتها في الجدول أعلاه، وحُدّثت طبقة «عقد الأدوات» في الـ System Prompt بنفس الأسماء (الإصدار 1.1) — القائمة الحية وحدها هي المرجع، لا هذا الجدول ولا أي مصدر ثانوي.</p>
+      <p><strong>خارج البروتوكول:</strong> من الأدوات الـ ٦٧، ثلاثون أداة لا تنتمي لخطوات التحليل ٠–٦: عائلة الملفات <span class="mono">mt_file_*</span> (٢٣ أداة: سياسة الوصول إلى الملفات، سرد وقراءة وتحرير ونقل ملفات الجهاز) وعائلة الأرشيف <span class="mono">mt_zip_*</span> (٧ أدوات: سرد وقراءة وفحص سلامة واستخراج وإنشاء وتحديث ملفات ZIP). تُستخدم مساندةً عند الحاجة — كقراءة سجلّات الجلسة وملفات الاختبار على الجهاز أو فحص أرشيف — ولا يستدعيها النموذج أثناء التحليل في النسخة الأولى.</p>
+      <p><strong>قواعد تسري على الفئات كلها</strong> (من عقد الأدوات في البرومبت): أداة واحدة في كل خطوة وانتظار نتيجتها؛ ممنوع افتراض نتيجة أداة لم تُستدعَ؛ عند خطأ أو فراغ: زاوية بديلة واحدة كحد أقصى ثم «غير مؤكد»؛ سقف الجلسة ٤٠ خطوة يشمل استدعاءات هذا الدليل كلها.</p>
+    </div>
+  </section>
+
+  <!-- ================= SYSTEM PROMPT ================= -->
+  <section id="prompt">
+    <div class="sec-head">
+      <span class="num">٥</span>
+      <h2>الـ System Prompt: قلب الأداة</h2>
+      <p>النموذج وحده ذكي لكنه متسرّع وواثق زيادة. الـ System Prompt هو ما يحوّله إلى محلّل منضبط. صُمم على سبع طبقات، كل طبقة تسدّ باب خطأ معروف.</p>
+    </div>
+    <div class="layers">
+      <div class="layer"><h3><span class="lid">LAYER 1 · IDENTITY</span>الهوية والهدف الواحد</h3><p>يُعرَّف النموذج بدقة: محلّل كود أندرويد يقرأ Smali عبر أدوات، وهدفه الوحيد تحديد نظام الميزات المدفوعة وتوثيقه. لا شخصية زائدة، لا مهام جانبية.</p></div>
+      <div class="layer"><h3><span class="lid">LAYER 2 · EVIDENCE LAW</span>قانون الأدلة</h3><p>أقسى طبقة وأهمها: ممنوع ذكر أي كلاس أو دالة لم ترد حرفياً في مخرجات الأدوات، وكل استنتاج يُبنى على «بطاقة دليل» مرقّمة. هذه الطبقة وحدها تقضي على أخطر bug: اختراع الكود.</p></div>
+      <div class="layer"><h3><span class="lid">LAYER 3 · PROTOCOL</span>بروتوكول التحليل الإلزامي</h3><p>تسلسل خطوات لا يجوز القفز فوقه: فرز أولي، اكتشاف، تتبّع مصدر القيمة، فحص التوقيع، تصنيف محلي/خادم، ثم القرار. الترتيب يمنع الحكم المبكر.</p></div>
+      <div class="layer"><h3><span class="lid">LAYER 4 · OBFUSCATION</span>التعامل مع التشويش</h3><p>تعليمات صريحة: الأسماء غير موثوقة؛ اعتمد البصمات السلوكية (الأنواع المرجعة، مصادر القراءة، سلاسل الاستدعاء، النصوص الظاهرة في الواجهة والموارد).</p></div>
+      <div class="layer"><h3><span class="lid">LAYER 5 · TOOL CONTRACT</span>عقد الأدوات</h3><p>قائمة الأدوات الحقيقية بأسمائها من القائمة الحية (٦٧ أداة) وحدودها: الكود الشبهي Java أولاً عبر <span class="mono">mt_apk_dex_read_pseudocode</span>، وSmali للتعليمات الدقيقة والتعديل. وقاعدة «أداة واحدة في كل خطوة»، وماذا يفعل عند فشل أداة أو رجوعها فارغة.</p></div>
+      <div class="layer"><h3><span class="lid">LAYER 6 · FAILURE RULES</span>قواعد الفشل والتوقف</h3><p>متى يتوقف ويعترف: فحص خادم موقّع، حماية أصلية، نفاد خطوات، تعارض أدلة. التوقف الشريف نتيجة ناجحة في هذه الطبقات، لا فشل.</p></div>
+      <div class="layer"><h3><span class="lid">LAYER 7 · OUTPUT</span>صيغة الإخراج الصارمة</h3><p>مخرَج واحد ثابت: كائن JSON بمواصفات محددة يقرأه المدقّق البرمجي، يليه تقرير عربي للمستخدم. لا نص حر قبل الـ JSON، ولا حقول من عند النموذج.</p></div>
+      <div class="layer"><h3><span class="lid">GUARDRAIL</span>ما ليس في البرومبت عمداً</h3><p>لا تعليمات «كن واثقاً» ولا أوامر إبداعية: كل جملة رخوة في البرومبت تتحول لسلوك رخو في التحليل. البرومبت أدناه مكتوب كدستور عمل، لا كتحفيز.</p></div>
+    </div>
+
+    <div class="prompt-box">
+      <div class="prompt-bar">
+        <div class="t">النص الكامل — System Prompt v1.1<small>يُرسل مع كل جلسة تحليل، ولا يُعرض للمستخدم داخل الأداة. النصوص البرمجية والمعرّفات تبقى كما هي دون ترجمة.</small></div>
+        <button id="copyBtn" type="button">نسخ البرومبت كاملاً</button>
+      </div>
+      <pre id="promptText">SYSTEM PROMPT — مساعد تحليل تطبيقات أندرويد (الإصدار 1.1)
+
+[١] الهوية والهدف
+أنت «محلّل كود» داخل أداة أندرويد لتحليل ملفات APK عبر خدمة APK MCP في MT Manager.
+مهمتك الوحيدة: تحديد كيف يتحقق التطبيق المستهدف من الميزات المدفوعة (Premium/Pro/VIP)،
+وتوثيق ذلك بأدلة حقيقية من الكود، واقتراح خطة تعديل آمنة إن كان الفحص محلياً.
+لست مساعداً عاماً: لا تجب عن أي سؤال خارج هذا التحليل.
+
+[٢] قانون الأدلة (الأعلى أولوية — يعلو على كل ما بعده)
+1. ممنوع منعاً باتاً ذكر أي كلاس أو دالة أو حقل أو نص لم يظهر حرفياً في مخرجات الأدوات خلال هذه الجلسة.
+2. كل استنتاج يجب أن يستند إلى «بطاقة دليل» بصيغة: (رقم البطاقة، الأداة المستخدمة، المعرّف كما ظهر، مقتطف Smali أو كود شبهي أو نتيجة البحث).
+3. إذا لم يتوفر دليل، اكتب حرفياً: «غير مؤكد — يحتاج فحصاً إضافياً» وحدّد الفحص المطلوب. التخمين المقدَّم كحقيقة هو أخطر خطأ ممكن.
+4. لا تستنتج من اسم الدالة وحده أبداً؛ الاسم تلميح للبحث فقط، والحكم يكون على جسم الدالة وسلوكها.
+
+[٣] بروتوكول التحليل (بالترتيب — لا تقفز خطوة)
+الخطوة 0 — الفرز: اقرأ الـ Manifest والحزم ومؤشر التشويش (نسبة أسماء الكلاسات/الدوال القصيرة مثل a.b.c). سجّل درجة التشويش: منعدمة/متوسطة/عالية.
+الخطوة 1 — الاكتشاف: ابحث أولاً بالكلمات (premium, isPro, vip, subscri, billing, purchase, entitlement) وبأسماء مكتبات الدفع (RevenueCat, BillingClient, Adapty, Qonversion, Superwall). إن لم تجد شيئاً وكان التشويش متوسطاً أو عالياً، انتقل للبحث السلوكي في الخطوة 2 دون إعلان «لا يوجد فحص».
+الخطوة 2 — البحث السلوكي: ابحث عن بصمات الفحص لا أسمائه: دوال ترجع Z (boolean) وتقرأ من SharedPreferences أو SQLite أو ملف محلي، وتُستدعى قبل إظهار/قفل عناصر واجهة أو ميزات. تتبّع المراجع المتقاطعة (xrefs) من شاشات الترقية والدفع إن وُجدت.
+الخطوة 3 — تتبّع مصدر القيمة: لأي دالة مرشّحة، حدّد مصدر قيمتها بدقة: ثابت/تخزين محلي، أو ذاكرة مؤقتة لردّ خادم، أو تحقق شبكي مباشر. هذه الخطوة هي الحكم في «محلي أم خادم».
+الخطوة 4 — فحص الحمايات: ابحث عن فحص سلامة التوقيع (signature/ certificate hash) وعن أي تحقق سلامة (integrity) قد يمنع تشغيل نسخة معدّلة، وسجّل مواضعه كبطاقات دليل منفصلة.
+الخطوة 5 — التصنيف والقرار: صنّف الفحص واحداً من: (محلي صرف) / (محلي مع كاش خادم) / (خادم صرف) / (غير موجود أصلاً — الميزات مفتوحة أو غير موجودة) / (غير مؤكد). لا تختار تصنيفاً بلا بطاقة دليل من الخطوة 3 على الأقل.
+الخطوة 6 — خطة التعديل (فقط إن كان التصنيف محلياً): اقترح التعديل الأدنى أثراً (دالة واحدة غالباً) بصيغة: الكلاس، الدالة، التوقيع الكامل، كود Smali قبل/بعد، والمخاطر. لا تقترح أي تعديل إن كان التصنيف «خادم صرف» — اكتب سبب الاستحالة بوضوح بدلاً من ذلك.
+
+[٤] قواعد الأدوات
+- استخدم أداة واحدة في كل خطوة، وانتظر نتيجتها. ممنوع افتراض نتيجة أداة لم تُستدعَ.
+- لمنطق أي كلاس أو دالة: اقرأ الكود الشبهي Java أولاً عبر mt_apk_dex_read_pseudocode (ابدأ بـ style=readable) — فهو الأداة المفضّلة أولاً لهذا الغرض. ولا تلجأ إلى Smali عبر mt_apk_read_text إلا عند الحاجة لتعليمات دقيقة أو للتعديل، أو عند فشل توليد الكود الشبهي، أو بقاء المنطق غامضاً بعد قراءة صفحات الكود الشبهي ذات الصلة. الكود الشبهي للقراءة فقط، وتحليله محدود بالكلاس أو الدالة المختارة، فالأنواع المستنتجة فيه قد تكون ناقصة.
+- إن رجعت أداة بخطأ أو نتيجة فارغة: سجّل ذلك، جرّب زاوية واحدة بديلة كحد أقصى، ثم اعتبر النقطة «غير مؤكدة» ولا تعلّق التحليل كله عليها.
+- سقف الجلسة: 40 خطوة أدوات. عند الاقتراب منه، لخّص ما ثبت وما بقي غير مؤكد وأنهِ بالتقرير.
+
+[٥] شروط التوقف الشريف (أنهِ وسجّل — لا تراوغ)
+- الفحص خادم صرف بردّ موقّع تشفيرياً ← النتيجة: «غير قابل للتعديل محلياً» مع الدليل.
+- الفحص داخل مكتبة أصلية (.so) بلا أدوات تحليل كافٍ ← صرّح بالحدّ.
+- تعارضت الأدلة ولم يُحسم التعارض بعد خطوتي تحقق ← «غير مؤكد» مع شرح التعارض.
+
+[٦] الإخراج (صيغتان، بهذا الترتيب حصراً)
+أولاً: كائن JSON واحد فقط بهذه الحقول:
+{ "obfuscation": "none|medium|high",
+  "verdict": "local|local_cached|server|none|uncertain",
+  "confidence": 0.0-1.0,
+  "evidence": [ { "id": 1, "tool": "…", "identifier": "…", "excerpt": "…" } ],
+  "gate": { "class": "…", "method": "…", "signature": "…" },
+  "payment_sdk": "…|none",
+  "signature_check": { "found": true|false, "evidence_id": 0 },
+  "patch_plan": [ { "step": 1, "action": "…", "before": "…", "after": "…", "risk": "…" } ],
+  "open_questions": [ "…" ] }
+قواعد الـ JSON: confidence تُحسب من اكتمال الأدلة (دليل واحد ≤ 0.5، تتبّع مصدر مكتمل + مرجع متقاطع ≥ 0.8)؛ gate تُترك فارغة إن لم يثبت وجود بوابة؛ لا حقول إضافية.
+ثانياً: تقرير عربي للمستخدم يبدأ بالنتيجة في أول سطر، ثم الأدلة مرقّمة كما في الـ JSON، ثم خطة التعديل أو سبب الاستحالة، بلغة واضحة بلا مبالغة، والمعرّفات البرمجية كما هي دون ترجمة.
+
+[٧] اللغة والأسلوب
+لغة التقرير العربية الفصحى المبسطة. لا ثقة زائدة، لا عبارات تسويقية، لا وعود. إن سأل المستخدم أثناء التحليل سؤالاً جانبياً، أجّل الإجابة حتى نهاية التقرير.</pre>
+    </div>
+    <p class="prompt-note">لاحظ ما يفعله هذا النص فعلياً: البند [٢] يحوّل «الهلوسة» من احتمال إلى مخالفة صريحة، والبند [٣] يحوّل التحليل من انطباع إلى إجراء، والبند [٦] يجعل النتيجة قابلة للفحص الآلي. جودة الأداة ستكون بجودة انضباط هذا النص — لذلك يُختبَر البرومبت نفسه كبرومبتات اختبار في المرحلة ٤ قبل أي واجهة جميلة.</p>
+  </section>
+
+  <!-- ================= SIMULATOR ================= -->
+  <section id="sim">
+    <div class="sec-head">
+      <span class="num">٦</span>
+      <h2>محاكاة القرار: ماذا تفعل الأداة في كل حالة؟</h2>
+      <p>اختر نوع التطبيق، وسترى مسار التحليل الذي يفرضه البروتوكول والحكم النهائي المتوقع. وهي نفسها حالات مصفوفة الاختبار في القسم ٩.</p>
+    </div>
+    <div class="sim">
+      <div class="opts" role="group" aria-label="نوع التطبيق">
+        <button type="button" data-case="clear" aria-pressed="true">أسماء واضحة، فحص محلي</button>
+        <button type="button" data-case="obfuscated" aria-pressed="false">مبهم بـ R8، فحص محلي</button>
+        <button type="button" data-case="sdk" aria-pressed="false">مكتبة دفع (RevenueCat)</button>
+        <button type="button" data-case="server" aria-pressed="false">فحص على الخادم</button>
+        <button type="button" data-case="sig" aria-pressed="false">فحص محلي + حماية توقيع</button>
+      </div>
+      <div class="sim-out" id="simOut"></div>
+    </div>
+  </section>
+
+  <!-- ================= PHASES ================= -->
+  <section id="phases">
+    <div class="sec-head">
+      <span class="num">٧</span>
+      <h2>مراحل التنفيذ — وبوابات قبول بين كل مرحلتين</h2>
+      <p>مرحلة تمهيدية (٠) تليها سبع مراحل تنفيذ (١–٧). «بوابة القبول» هي شرط موضوعي قابل للفحص: لا ننتقل للمرحلة التالية قبل تحققه، مهما بدا العمل «شبه جاهز». افتح أي مرحلة لعرض مهامها ومخرَجها وبوابتها.</p>
+    </div>
+
+    <details class="phase" open>
+      <summary><span class="pnum">٠</span><span class="ptitle">تثبيت النطاق والحدود</span><span class="pdur">جلسة واحدة</span><span class="chev">▾</span></summary>
+      <div class="body"><div class="cols">
+        <div><h4>المهام</h4><ul><li>تثبيت تعريف النجاح: «تقرير موثّق يحدّد بوابة الفحص وتصنيفها» — لا «فتح أي تطبيق».</li><li>اعتماد المبادئ الستة وحسم القرارات الخمسة في القسم ١٠ (حُسمت كلها في ١٤ نوفمبر ٢٠٢٦).</li><li>تجهيز ٥ تطبيقات اختبار قانونية (تطبيقات مفتوحة المصدر أو تجريبية من صنعنا بأنماط الفحص المختلفة).</li></ul></div>
+        <div><h4>المخرَج</h4><ul><li>وثيقة نطاق من صفحة واحدة.</li><li>مجموعة تطبيقات الاختبار الخمسة جاهزة ومصنّفة (واضح / مبهم / مكتبة دفع / خادم / توقيع).</li></ul></div>
+      </div>
+      <div class="gate"><strong>بوابة القبول:</strong> التطبيقات الخمسة موجودة فعلاً ونتائجها المتوقعة مكتوبة قبل أي تحليل — حتى نكشف أخطاء الأداة لا نبرّرها بعد وقوعها.</div></div>
+    </details>
+
+    <details class="phase">
+      <summary><span class="pnum">١</span><span class="ptitle">إثبات الاتصال بـ MT MCP</span><span class="pdur">الأولوية القصوى</span><span class="chev">▾</span></summary>
+      <div class="body"><div class="cols">
+        <div><h4>المهام</h4><ul><li>تشغيل خدمة APK MCP في MT Manager يدوياً (من الدرج الجانبي ← الأدوات ← APK MCP ← بدء) — الخدمة لا تُشغَّل برمجياً.</li><li>بناء عميل MCP صغير يتصل بـ <span class="mono">127.0.0.1:8787/mcp</span> ويجلب قائمة الأدوات الفعلية من الجهاز نفسه.</li><li>توثيق القائمة الحقيقية كما رجعت من الجهاز، والتعامل معها بوصفها المرجع الوحيد.</li></ul></div>
+        <div><h4>المخرَج</h4><ul><li>سجل اتصال ناجح + قائمة أدوات فعلية موثقة.</li><li>خريطة: أي أداة سنستخدمها في كل خطوة من بروتوكول التحليل.</li><li>مُلئت خانة «اسم الأداة الدقيق» في دليل الأدوات (القسم ٤) حرفياً من هذه القائمة الحية (أُنجز ١٤ نوفمبر ٢٠٢٦) — لا من أي مصدر آخر.</li></ul></div>
+      </div>
+      <div class="gate"><strong>بوابة القبول:</strong> فتح APK حقيقي عبر MCP وقراءة مخطط كلاس واحد على الأقل من الجهاز. <strong>نتيجة الجلب الحي (١٤ نوفمبر ٢٠٢٦):</strong> القائمة الفعلية من الجهاز (الخادم <span class="mono">MT MCP 0.2.0</span>) فيها <strong>٦٧ أداة</strong> — ادعاء الفيديو صحيح، ورقم ٢٦ في المصادر الثانوية كان جزئياً — وفيها قراءة Java شبهية (Pseudocode) عبر <span class="mono">mt_apk_dex_read_pseudocode</span>؛ فحُدّثت الخطة بالأرقام الحقيقية كما اشترطت هذه البوابة. <strong>البوابة نجحت فعلاً (١٤ نوفمبر ٢٠٢٦، ٢٠:٣٠):</strong> فُتح <span class="mono">com.musaed.test.clear</span> عبر MCP (مساحة العمل <span class="mono">x3ew9hvv</span>) وقُرئ مخطط <span class="mono">PremiumGate</span> — ٠ حقول، ٣ دوال: <span class="mono">&lt;init&gt;</span> و<span class="mono">hasPremiumFeatures</span> و<span class="mono">isPremium</span> — فاكتمل اختبار الفتح والقراءة على الجهاز.</div></div>
+    </details>
+
+    <details class="phase">
+      <summary><span class="pnum">٢</span><span class="ptitle">طبقة الأدوات وبنّاء السياق</span><span class="chev">▾</span></summary>
+      <div class="body"><div class="cols">
+        <div><h4>المهام</h4><ul><li>مغلّفات (wrappers) لكل أداة MCP مستخدمة: مهلة زمنية، إعادة محاولة واحدة، ورسائل خطأ مفهومة.</li><li>بنّاء سياق: تجميع حزمة الكلاس (مخططه + جسم الدالة + مراجعه) في وحدة واحدة صغيرة.</li><li>سجلّ جلسة يحفظ كل مخرجات الأدوات حرفياً — هو مرجع المدقّق وبطاقات الأدلة.</li></ul></div>
+        <div><h4>المخرَج</h4><ul><li>طبقة أدوات مستقرة بسجلّ جلسة كامل قابل للعرض والمراجعة.</li></ul></div>
+      </div>
+      <div class="gate"><strong>بوابة القبول:</strong> تشغيل ٢٠ استدعاء أداة متتالياً على تطبيق كبير متعدد ملفات DEX دون انهيار أو فقدان أي مخرَج من السجل.</div></div>
+    </details>
+
+    <details class="phase">
+      <summary><span class="pnum">٣</span><span class="ptitle">حلقة التحليل والفحص السريع</span><span class="chev">▾</span></summary>
+      <div class="body"><div class="cols">
+        <div><h4>المهام</h4><ul><li>تنفيذ الفحص السريع المجاني (كلمات + كشف تشويش) كخطوة ٠ تغذّي النموذج.</li><li>حلقة الوكيل: خطوة أداة واحدة، تفسير، بطاقة دليل، حتى اكتمال البروتوكول أو شرط توقف أو سقف ٤٠ خطوة.</li><li>اختيار النموذج ومفتاح API من إعدادات المستخدم (المفتاح يبقى في جهازه ولا يغادره إلا لمزود النموذج).</li></ul></div>
+        <div><h4>المخرَج</h4><ul><li>تحليل كامل من سطر الأوامر/واجهة بدائية: APK في ← JSON خام خارج.</li></ul></div>
+      </div>
+      <div class="gate"><strong>بوابة القبول:</strong> على تطبيقَي الاختبار «الواضح» و«المبهم»: الحلقة تصل لبوابة الفحص الصحيحة المعروفة سلفاً في كليهما — وخصوصاً المبهم، وهو سبب وجود المشروع.</div></div>
+    </details>
+
+    <details class="phase">
+      <summary><span class="pnum">٤</span><span class="ptitle">دمج الـ System Prompt والمدقّق البرمجي</span><span class="chev">▾</span></summary>
+      <div class="body"><div class="cols">
+        <div><h4>المهام</h4><ul><li>اعتماد نص البرومبت في القسم ٥ بوصفه الإصدار 1.1 وإرساله مع كل جلسة.</li><li>بناء المدقّق: مطابقة كل معرّف في الـ JSON مع سجلّ الجلسة، رفض أي معرّف مخترع، وإعادة الجلسة للخطوة الناقصة.</li><li>اختبارات عدائية للبرومبت: APK بلا أي فحص دفع، وآخر بفحص خادم — لقياس إن كان النموذج «يجد» وهماً حين لا يوجد شيء.</li></ul></div>
+        <div><h4>المخرَج</h4><ul><li>خط أنابيب: تحليل ← تدقيق آلي ← تقرير، مع سجلّ لكل رفض وإعادة.</li></ul></div>
+      </div>
+      <div class="gate"><strong>بوابة القبول:</strong> صفر معرّفات مخترعة تصل للمستخدم في كل الاختبارات، والنموذج يحكم «خادم صرف» و«غير موجود» بشكل صحيح على الحالتين العدائيتين — لا يكفي أن ينجح حين توجد بوابة.</div></div>
+    </details>
+
+    <details class="phase">
+      <summary><span class="pnum">٥</span><span class="ptitle">التقرير العربي والواجهة</span><span class="chev">▾</span></summary>
+      <div class="body"><div class="cols">
+        <div><h4>المهام</h4><ul><li>واجهة أندرويد عربية رسمية بسيطة: اختيار APK، تقدّم التحليل خطوة بخطوة (أي أداة تعمل الآن)، ثم التقرير.</li><li>التقرير يعرض النتيجة أولاً، والأدلة قابلة للفتح (الكلاس والدالة والمقتطف)، ودرجة الثقة مع سببها.</li><li>حالة «غير قابل للتعديل» تُعرض بنفس الاحترام والوضوح — لا تُخفى ولا تُجمَّل.</li></ul></div>
+        <div><h4>المخرَج</h4><ul><li>تطبيق قابل للتثبيت والاستخدام الكامل دون أدوات خارجية غير MT Manager.</li></ul></div>
+      </div>
+      <div class="gate"><strong>بوابة القبول:</strong> مستخدم لم يرَ الأداة من قبل يفهم من تقرير واحد: أين الفحص، ولماذا الحكم محلي أو خادم، وما الخطوة التالية — دون شرح شفهي منا.</div></div>
+    </details>
+
+    <details class="phase">
+      <summary><span class="pnum">٦</span><span class="ptitle">التعديل الآمن والبناء والاختبار</span><span class="chev">▾</span></summary>
+      <div class="body"><div class="cols">
+        <div><h4>المهام</h4><ul><li>تطبيق خطة التعديل على نسخة فقط، بعد معالجة فحص التوقيع إن وُجد (هو سبب تعطل النسخة في الفيديو المرجعي — لا نكرره).</li><li>إعادة البناء والتوقيع عبر MT، ثم اختبار إقلاع فعلي للنسخة المعدّلة.</li><li>توثيق كل تعديل قبل/بعد داخل التقرير، مع زر تراجع يعيد النسخة الأصلية.</li></ul></div>
+        <div><h4>المخرَج</h4><ul><li>نسخة معدّلة «مُختبَرة الإقلاع» أو تقرير صريح بأن البناء/الإقلاع فشل وسببه.</li></ul></div>
+      </div>
+      <div class="gate"><strong>بوابة القبول:</strong> ممنوع عرض أي نسخة بوصفها «جاهزة» قبل نجاح إقلاعها. نسخة تتعطل عند الفتح = فشل مرحلة، لا «نجاح جزئي».</div></div>
+    </details>
+
+    <details class="phase">
+      <summary><span class="pnum">٧</span><span class="ptitle">الإطلاق التجريبي والتحسين</span><span class="chev">▾</span></summary>
+      <div class="body"><div class="cols">
+        <div><h4>المهام</h4><ul><li>تشغيل مجموعة الاختبار الكاملة (القسم ٩) وحساب معدلات: صحة البوابة، صحة التصنيف، اختراع المعرّفات (المطلوب: صفر دائماً).</li><li>جمع إخفاقات حقيقية وتحويل كل إخفاق لقاعدة جديدة في البرومبت أو فحص جديد في المدقّق — لا إصلاحات عشوائية.</li><li>ضبط التكلفة: قياس متوسط الرموز لكل تحليل، وتفعيل اقتصاديات الفحص السريع حيث يكفي.</li></ul></div>
+        <div><h4>المخرَج</h4><ul><li>تقرير جودة بأرقام + إصدار 1.0 مستقر.</li></ul></div>
+      </div>
+      <div class="gate"><strong>بوابة القبول:</strong> استيفاء عتبات الاختبار والقبول في القسم ٩ كلها، على تطبيقات لم تُستخدم أثناء التطوير.</div></div>
+    </details>
+  </section>
+
+  <!-- ================= BUGS ================= -->
+  <section id="bugs">
+    <div class="sec-head">
+      <span class="num">٨</span>
+      <h2>بروتوكول منع الأخطاء والـ Bugs</h2>
+      <p>الأخطاء المتوقعة معروفة سلفاً من طبيعة المجال ومن دروس الأدوات المشابهة. لكل خطأ: وقاية قبل وقوعه، وكشف آلي عند وقوعه، واسترداد محدد.</p>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>الخطأ</th><th>الوقاية</th><th>الكشف والاسترداد</th></tr></thead>
+        <tbody>
+          <tr><td><strong>النموذج يخترع كلاساً أو دالة</strong></td><td class="dim">قانون الأدلة في البرومبت [٢]</td><td>المدقّق يطابق كل معرّف مع سجل الجلسة؛ المخترع يُرفض وتُعاد الخطوة، ويُسجَّل الرفض في تقرير الجودة</td></tr>
+          <tr><td><strong>يشير لدالة صحيحة الاسم خاطئة الدور</strong></td><td class="dim">البند [٢.٤]: الحكم على الجسم لا الاسم + تتبّع المراجع المتقاطعة</td><td>اشتراط بطاقة دليل من تتبّع المصدر (الخطوة ٣) قبل أي تصنيف؛ غيابها يخفض الثقة ويمنع خطة التعديل</td></tr>
+          <tr><td><strong>فحص خادم يُصنَّف محلياً</strong></td><td class="dim">الخطوة ٣ إلزامية ولا تُتخطى</td><td>المدقّق يرفض تصنيف «محلي» بلا دليل مصدر قيمة؛ والنتيجة الخاطئة هنا أخطر من «غير مؤكد»</td></tr>
+          <tr><td><strong>نسيان فحص التوقيع فتتعطل النسخة</strong></td><td class="dim">الخطوة ٤ مخصصة له قبل أي خطة تعديل</td><td>اختبار الإقلاع الإلزامي في المرحلة ٦ يكشفه حتماً قبل أن يصل للمستخدم</td></tr>
+          <tr><td><strong>امتلاء السياق بكود زائد</strong></td><td class="dim">بنّاء السياق: حزم كلاس واحد + ملخصات + سقف رموز</td><td>سقف ٤٠ خطوة يجبر التلخيص والخاتمة بدل الانجراف والهلوسة في الجلسات الطويلة</td></tr>
+          <tr><td><strong>خدمة MCP مطفأة أو MT غير جاهز</strong></td><td class="dim">فحص اتصال افتتاحي قبل اختيار الملف أصلاً</td><td>رسالة واحدة واضحة بخطوة التشغيل اليدوي الدقيقة، بدل أخطاء مبهمة من النموذج</td></tr>
+          <tr><td><strong>تعديل صحيح يخرب ميزة أخرى</strong></td><td class="dim">«التعديل الأدنى أثراً» + نسخة عمل فقط + توثيق قبل/بعد</td><td>التراجع بضغطة: الأصل محفوظ دائماً، والتعديلات كلها قابلة للعزل والتجربة فردياً</td></tr>
+          <tr><td><strong>انفجار التكلفة (رموز/رصيد)</strong></td><td class="dim">الفحص السريع المجاني أولاً + سياق مقطّع</td><td>عداد تكلفة ظاهر أثناء التحليل وسقف جلسة؛ التوقف عند السقف مع ملخص، لا استمرار صامت</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= TESTS ================= -->
+  <section id="tests">
+    <div class="sec-head">
+      <span class="num">٩</span>
+      <h2>الاختبار والقبول — بأرقام لا بانطباعات</h2>
+      <p>مصفوفة اختبار ثابتة تُعاد كلها عند أي تغيير في البرومبت أو المدقّق. تغيير البرومبت بلا إعادة المصفوفة كاملة ممنوع — فالبرومبتات تنكسر بصمت.</p>
+    </div>
+    <div class="two-col">
+      <div class="card"><h3>مصفوفة الحالات</h3><ul>
+        <li><strong>واضح الأسماء + فحص محلي</strong> — الحالة السهلة، للمعايرة.</li>
+        <li><strong>مبهم بـ R8 + فحص محلي</strong> — حالة المشروع الأساسية؛ الفشل هنا فشل للمشروع.</li>
+        <li><strong>مكتبة دفع</strong> (RevenueCat / BillingClient) — هل يتتبع حالة الاشتراك لمستهلكها الحقيقي؟</li>
+        <li><strong>فحص خادم موقّع</strong> — الحكم الصحيح: «غير قابل للتعديل محلياً».</li>
+        <li><strong>فحص توقيع + فحص محلي</strong> — هل تُرصد الحماية قبل التعديل؟</li>
+        <li><strong>بلا أي ميزات مدفوعة</strong> — الحالة العدائية: الحكم الصحيح «غير موجود»، وأي «اكتشاف» هنا هلوسة مكشوفة.</li>
+        <li><strong>تطبيق ضخم متعدد DEX</strong> — الأداء وسقف الخطوات والتكلفة.</li>
+      </ul></div>
+      <div class="card"><h3>عتبات القبول</h3><ul>
+        <li><strong>معرّفات مخترعة تصل للمستخدم: صفر</strong> — خط أحمر لا نسبة له.</li>
+        <li><strong>تحديد البوابة الصحيحة:</strong> في الحالات المحلية كلها (واضحة ومبهمة).</li>
+        <li><strong>التصنيف محلي/خادم:</strong> صحيح في كل الحالات؛ الخطأ الوحيد المسموح هو «غير مؤكد».</li>
+        <li><strong>رصد فحص التوقيع:</strong> قبل أي خطة تعديل، دائماً.</li>
+        <li><strong>نسخة معدّلة معروضة «جاهزة»:</strong> أقلعت فعلياً في الاختبار، دائماً.</li>
+        <li><strong>تكلفة التحليل الواحد:</strong> تُقاس وتُوثَّق لكل حالة؛ أي قفزة غير مفسَّرة بعد تغيير البرومبت تُراجَع قبل الاعتماد.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <!-- ================= OPEN DECISIONS ================= -->
+  <section id="open">
+    <div class="sec-head">
+      <span class="num">١٠</span>
+      <h2>قرارات مثبّتة — حسمها سليمان</h2>
+      <p>حُسمت القرارات الخمسة كلها في ١٤ نوفمبر ٢٠٢٦، فلم تعد أسئلة مفتوحة بل أساساً يُبنى عليه: الـ stack، والنموذج، ونطاق النسخة الأولى، وشرط التشغيل، ولغة الواجهة.</p>
+    </div>
+    <div class="card"><ul class="plain-list open-q">
+      <li><strong>الـ stack: Kotlin</strong> — تطبيق أندرويد أصلي (Native)؛ يتكلم مع MT Manager ونظام أندرويد مباشرة، ويُبقي باب JADX المضمّن مفتوحاً مستقبلاً لأنه JVM مثل Kotlin.</li>
+      <li><strong>النموذج الافتراضي: DeepSeek</strong> — كما في الأداة المرجعية، مع خيار مزوّد متوافق (OpenAI-compatible) من الإعدادات لاحقاً.</li>
+      <li><strong>نطاق النسخة الأولى: تقرير + خطة تعديل فقط</strong> — والتعديل التلقائي في إصدار لاحق، لأنه أخطر جزء؛ نثبّت التحليل أولاً ثم نبني فوقه.</li>
+      <li><strong>التشغيل: الاعتماد على MT Manager</strong> — تشغيل خدمة MCP يدوياً في كل مرة مقبول بوصفه شرط استخدام معلناً، وهو أصل فكرة الأداة.</li>
+      <li><strong>لغة الواجهة: عربية فقط</strong> — في النسخة الأولى (وهي الفجوة الأوضح في السوق) مع بقاء المعرّفات البرمجية كما هي؛ والإنجليزية تُضاف لاحقاً.</li>
+    </ul></div>
+    <div class="two-col" style="margin-top:14px">
+      <div class="card"><h3>خارج نطاق النسخة الأولى عمداً</h3><ul>
+        <li>التحليل الديناميكي وقت التشغيل (Frida/التعقّب الحي) — قوة لاحقة، لا أساس.</li>
+        <li>فك تشفير النصوص المشفّرة وتحليل المكتبات الأصلية بعمق — تُصرَّح كحدود عند مصادفتها.</li>
+        <li>قاعدة باتشات جاهزة لتطبيقات مشهورة (نموذج Lucky Patcher/ReVanced) — نقيض فكرة التحليل الذكي أصلاً.</li>
+        <li>أي رفع سحابي لملفات APK — التحليل كله على الجهاز وعبر مفتاح المستخدم.</li>
+      </ul></div>
+      <div class="card"><h3>أكبر ثلاثة مخاطر على المشروع</h3><ul>
+        <li><strong>تغيّر سطح MT MCP:</strong> الأداة مبنية على خدمة يطوّرها طرف آخر؛ تُخفَّف الخريطة الموثقة في المرحلة ١ وفصل طبقة الأدوات عن المنطق.</li>
+        <li><strong>سباق التشويش:</strong> تطبيقات تستخدم حمايات أثقل (تشفير نصوص/افتراضية) قد تتجاوز التحليل الثابت؛ تُدار بالتصريح المبكر بالحدود لا بالوعود.</li>
+        <li><strong>الفجوة قد تُغلق بسرعة:</strong> البحث نبّه أن مشاريع قريبة (مثل jadx-ai-mcp وJsxposedX) تتحرك بسرعة في ٢٠٢٦؛ سرعتنا للنسخة الأولى العربية هي الحماية.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <!-- ================= SOURCES ================= -->
+  <section id="sources">
+    <div class="sec-head">
+      <span class="num">١١</span>
+      <h2>المصادر والتحفظات</h2>
+      <p>كل رقم أو ادعاء تقني في هذه الخطة مصدره بحث المشاريع المشابهة المؤرخ ١٤ نوفمبر ٢٠٢٦، مع تحفظاته كما هي — لأن خطة تُبنى على أرقام غير مُتحقق منها ترث أخطاءها. الاستثناء الوحيد: أرقام أدوات MT MCP صُحّحت في اليوم نفسه بالقائمة الحية من الجهاز نفسه، وهي تتقدّم على أي مصدر ثانوي.</p>
+    </div>
+    <div class="card">
+      <ul class="plain-list">
+        <li><strong>أدوات MT MCP (مُصحَّحة بالقائمة الحية):</strong> القائمة التي جُلبت من جهاز سليمان نفسه بتاريخ ١٤ نوفمبر ٢٠٢٦ (الخادم <span class="mono">MT MCP 0.2.0</span>) أثبتت <strong>٦٧ أداة</strong> — فرقم الفيديو المرجعي صحيح — وفيها قراءة Java شبهية عبر <span class="mono">mt_apk_dex_read_pseudocode</span>. رقم «٢٦ أداة، بلا Java مفكوكة» الوارد في المصادر الثانوية كان جزئياً وقديماً، فحُذف من الخطة وحلّت القائمة الحية محله. ما بقي صحيحاً من التحفظ القديم: لا كود شبه Java للأجزاء الأصلية (<span class="mono">.so</span>) — تحليلها ثابت فقط.</li>
+        <li><strong>الأداة المرجعية</strong> (فيديو «عالم الاندرويد»، ١٣ نوفمبر ٢٠٢٦): لا رابط تحميل ولا مستودع عاماً؛ ادعاءاتها غير قابلة للفحص، والخطة تستفيد من فكرتها لا من أرقامها.</li>
+        <li><strong>حالة صيانة JsxposedX</strong> غير مُتحقق منها بعد لقطة توثيق مارس ٢٠٢٦؛ يُذكر بوصفه أقرب تطبيق لا بوصفه منافساً نشطاً مؤكداً.</li>
+      </ul>
+      <h3 style="margin-top:16px">روابط المصادر</h3>
+      <ul class="src-list plain-list">
+        <li>الفيديو المرجعي: <a href="https://youtu.be/Vamz4Ab-Crk" target="_blank" rel="noopener">youtu.be/Vamz4Ab-Crk</a></li>
+        <li>توثيق أدوات MT MCP على الجهاز (apk-reverse): <a href="https://git.nite07.com/EFOMA/apk-reverse/src/commit/b8aa0a529b0a70688969b7ec59cb7ce51d7f79d8/skills/apk-reverse/references/on-device-tooling.md?display=rendered" target="_blank" rel="noopener">git.nite07.com — on-device-tooling.md</a></li>
+        <li>JsxposedX — ميزة الذكاء الاصطناعي (DeepWiki): <a href="https://deepwiki.com/dugongzi/JsxposedX/2.5-ai-reverse-engineering-feature" target="_blank" rel="noopener">deepwiki.com/dugongzi/JsxposedX</a></li>
+        <li>مهارة morphe-ai لتحليل APK: <a href="https://github.com/tomaszk8266/morphe-ai/blob/HEAD/.opencode/skills/apk-analysis/SKILL.md" target="_blank" rel="noopener">github.com/tomaszk8266/morphe-ai</a></li>
+        <li>jadx-mcp-server (مجموعة Zin): <a href="https://github.com/zinja-coder/jadx-mcp-server" target="_blank" rel="noopener">github.com/zinja-coder/jadx-mcp-server</a></li>
+        <li>apktool-mcp-server: <a href="https://github.com/zinja-coder/apktool-mcp-server" target="_blank" rel="noopener">github.com/zinja-coder/apktool-mcp-server</a></li>
+        <li>دليل XHack لهندسة APK بالذكاء الاصطناعي: <a href="https://xhack.io/blog/ai-apk-reverse-engineering" target="_blank" rel="noopener">xhack.io/blog/ai-apk-reverse-engineering</a></li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>خطة بناء «مساعد التحليل» — إصدار ١، محدّثة ١٤ نوفمبر ٢٠٢٦ (أسماء أدوات MT MCP الحقيقية من القائمة الحية + القرارات الخمسة المثبّتة). الحالة الآن: المرحلة ٠ منجزة، والمرحلة ١ مجهّزة وقائمتها الحية موثّقة — والخطوة التالية اختبار بوابة المرحلة ١ على الجهاز: فتح أحد تطبيقات الاختبار عبر MCP وقراءة مخطط كلاس واحد على الأقل.</footer>
+</div>
+
+<script>
+(function(){
+  /* ===== Copy system prompt ===== */
+  var btn = document.getElementById('copyBtn');
+  var pre = document.getElementById('promptText');
+  btn.addEventListener('click', function(){
+    var text = pre.textContent;
+    function done(){
+      btn.textContent = 'تم النسخ ✓';
+      btn.classList.add('done');
+      setTimeout(function(){ btn.textContent = 'نسخ البرومبت كاملاً'; btn.classList.remove('done'); }, 2200);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function(){ fallback(); });
+    } else { fallback(); }
+    function fallback(){
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch(e){ btn.textContent = 'حدّد النص يدوياً وانسخه'; }
+      document.body.removeChild(ta);
+    }
+  });
+
+  /* ===== Decision simulator ===== */
+  var cases = {
+    clear: {
+      title: 'أسماء واضحة، فحص محلي',
+      steps: [
+        '<strong>الفحص السريع (مجاني):</strong> يجد <span class="mono">isPremium</span> وكلمة <span class="mono">premium</span> فوراً — تلميح قوي، لكن البروتوكول لا يقف هنا.',
+        '<strong>تتبّع المصدر (خطوة ٣):</strong> الدالة تقرأ قيمة من <span class="mono">SharedPreferences</span> محلية — لا شبكة.',
+        '<strong>فحص التوقيع (خطوة ٤):</strong> غير موجود — الطريق سالك.',
+        '<strong>المدقّق:</strong> المعرّفات مطابقة لسجل الجلسة، والدليل مكتمل → ثقة عالية.'
+      ],
+      verdict: 'الحكم: <strong>محلي صرف</strong> — تُقترح خطة تعديل: جعل دالة البوابة ترجع <span class="mono">true</span> دائماً، على نسخة، مع اختبار إقلاع.',
+      cls: 'local'
+    },
+    obfuscated: {
+      title: 'مبهم بـ R8، فحص محلي — الحالة التي كسرت المحلّل البسيط',
+      steps: [
+        '<strong>الفحص السريع:</strong> صفر نتائج، ومؤشر التشويش «عالٍ» — إذن لا يُعلن «لا يوجد فحص» أبداً.',
+        '<strong>البحث السلوكي (خطوة ٢):</strong> انطلاقاً من شاشة الترقية في الواجهة، تُتتبّع المراجع المتقاطعة حتى دالة باسم <span class="mono">a()</span> ترجع <span class="mono">Z</span>.',
+        '<strong>تتبّع المصدر (خطوة ٣):</strong> جسم الدالة يقرأ من قاعدة <span class="mono">SQLite</span> محلية — البصمة السلوكية تكفي رغم غياب الاسم.',
+        '<strong>المدقّق:</strong> الدليل سلوكي مكتمل (استدعاء من شاشة دفع + مصدر محلي) → تُقبل النتيجة.'
+      ],
+      verdict: 'الحكم: <strong>محلي صرف رغم التشويش الكامل</strong> — هذا بالضبط ما صُممت الأداة لأجله.',
+      cls: 'local'
+    },
+    sdk: {
+      title: 'مكتبة دفع (RevenueCat)',
+      steps: [
+        '<strong>الفحص السريع:</strong> يجد حزمة مكتبة الدفع واسمها — بداية الطريق لا نهايته.',
+        '<strong>التتبّع:</strong> النموذج يبحث عن أين تُستهلك حالة الاشتراك (<span class="mono">entitlements</span>) داخل كود التطبيق نفسه، لا داخل المكتبة.',
+        '<strong>تتبّع المصدر (خطوة ٣):</strong> الحالة تأتي من خادم المكتبة وتُخزَّن مؤقتاً في كاش محلي — الفرق حاسم.',
+        '<strong>المدقّق:</strong> يمنع تصنيف «محلي صرف» لأن مصدر الحقيقة شبكي.'
+      ],
+      verdict: 'الحكم: <strong>محلي مع كاش خادم</strong> — تعديل الكاش قد يفتح الواجهة مؤقتاً، لكن التقرير يصرّح بأن المزامنة التالية قد تعيد القفل؛ لا وعد زائف بالديمومة.',
+      cls: 'mixed'
+    },
+    server: {
+      title: 'فحص على الخادم',
+      steps: [
+        '<strong>الاكتشاف:</strong> توجد دوال بأسماء واعدة مثل <span class="mono">checkPremium</span> — فخّ كلاسيكي للمحلّل الساذج.',
+        '<strong>تتبّع المصدر (خطوة ٣):</strong> القيمة تأتي من ردّ شبكة موقّع، ولا قرار محلياً في التطبيق.',
+        '<strong>شرط التوقف الشريف:</strong> يُفعَّل فوراً دون إهدار خطوات إضافية مدفوعة.'
+      ],
+      verdict: 'الحكم: <strong>خادم صرف — غير قابل للتعديل محلياً</strong>. تُقال في أول سطر من التقرير مع الدليل، وهذه نتيجة ناجحة للأداة لا فشل: منعت وهماً ومحاولات عبثية.',
+      cls: 'server'
+    },
+    sig: {
+      title: 'فحص محلي + حماية توقيع — درس الفيديو المرجعي',
+      steps: [
+        '<strong>التحليل:</strong> بوابة محلية تُكتشف وتُوثَّق كالحالة الأولى تماماً.',
+        '<strong>فحص التوقيع (خطوة ٤):</strong> يوجد تحقق من بصمة الشهادة — لو عُدّل التطبيق كما هو، سيتعطل عند الفتح (وهو ما حدث للنسخة التجريبية في الفيديو).',
+        '<strong>خطة التعديل:</strong> خطوتان مرتبتان: تعطيل فحص التوقيع أولاً، ثم تعديل البوابة — الترتيب جزء من الخطة لا ملاحظة جانبية.',
+        '<strong>البوابة الأخيرة:</strong> اختبار إقلاع فعلي قبل وصف النسخة بأنها جاهزة.'
+      ],
+      verdict: 'الحكم: <strong>محلي قابل للتعديل بشرطين</strong>: معالجة التوقيع أولاً، ونجاح اختبار الإقلاع.',
+      cls: 'mixed'
+    }
+  };
+  var out = document.getElementById('simOut');
+  var btns = document.querySelectorAll('.sim .opts button');
+  function render(key){
+    var c = cases[key];
+    var html = '<h3>' + c.title + '</h3><ol>';
+    c.steps.forEach(function(s){ html += '<li>' + s + '</li>'; });
+    html += '</ol><div class="verdict ' + c.cls + '">' + c.verdict + '</div>';
+    out.innerHTML = html;
+    btns.forEach(function(b){ b.setAttribute('aria-pressed', b.getAttribute('data-case') === key ? 'true' : 'false'); });
+  }
+  btns.forEach(function(b){ b.addEventListener('click', function(){ render(b.getAttribute('data-case')); }); });
+  render('clear');
+})();
+</script>
+</body>
+</html>

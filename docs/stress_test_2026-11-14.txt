@@ -1,0 +1,29 @@
+اختبار إجهاد طبقة الأدوات — مساعد التحليل (المرحلة ٢)
+التطبيق الهدف: bin.mt.plus
+مساحة العمل: —
+عدد ملفات DEX: 0
+الاستدعاءات: 1/2 ناجحة (المطلوب ٢٠/٢٠)
+اكتمال السجل (الخطوات ١–٢٠): غير مكتمل ✗
+النتيجة: فاشل ✗ — لم تمر البوابة
+
+الخطوات:
+  ١ — mt_apk_list_installed_apps: ناجحة ✓ (الهدف: bin.mt.plus)
+  2 — mt_apk_workspace_open: فاشلة ✗ — الأداة mt_apk_workspace_open أعادت خطأ: {"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"APK_OPEN_BLOCKED\",\"message\":\"This APK package is not supported by mt_apk_workspace_open.\",\"severity\":\"fatal\",\"recoverable\":false,\"retrySameArguments\":false,\"argument\":null,\"badValue\":null,\"badValue
+  3 — mt_apk_list_entries: تخطى — لا توجد مساحة عمل
+  4 — mt_apk_read_signature: تخطى — لا توجد مساحة عمل
+  5 — mt_apk_search: تخطى — لا توجد مساحة عمل
+  6 — mt_apk_search: تخطى — لا توجد مساحة عمل
+  7 — mt_apk_search: تخطى — لا توجد مساحة عمل
+  8 — mt_apk_dex_list_classes: تخطى — لا توجد مساحة عمل
+  9 — mt_apk_continue: تخطى — لا توجد مساحة عمل
+  10 — mt_apk_dex_read_class_outline: تخطى — لا توجد مساحة عمل
+  11 — mt_apk_dex_read_pseudocode: تخطى — لا توجد مساحة عمل
+  12 — mt_apk_dex_read_pseudocode: تخطى — لا توجد مساحة عمل
+  13 — mt_apk_dex_xref: تخطى — لا توجد مساحة عمل
+  14 — mt_apk_dex_read_class_outline: تخطى — لا توجد مساحة عمل
+  15 — mt_apk_dex_read_pseudocode: تخطى — لا توجد مساحة عمل
+  16 — mt_apk_dex_xref: تخطى — لا توجد مساحة عمل
+  17 — mt_apk_resource_list: تخطى — لا توجد مساحة عمل
+  18 — mt_apk_search: تخطى — لا توجد مساحة عمل
+  19 — mt_apk_read_text: تخطى — لا توجد مساحة عمل
+  20 — mt_apk_dex_list_classes: تخطى — لا توجد مساحة عمل

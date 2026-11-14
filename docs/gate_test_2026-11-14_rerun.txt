@@ -1,0 +1,26 @@
+نتيجة اختبار البوابة — حُفظت 2026-11-14 21:29:43
+
+اختبار بوابة قبول المرحلة ١ — مساعد التحليل
+التاريخ: 2026-11-14 21:29:42
+التطبيق الهدف: com.musaed.test.clear
+المسار: mt://installed-app/com.musaed.test.clear
+مساحة العمل: mauwcs0t
+الكلاس: dex_class:Lcom/musaed/test/clear/PremiumGate;
+النتيجة: ناجح ✓ — فُتح APK حقيقي عبر MCP وقُرئ مخطط كلاس واحد على الأقل
+
+الخطوات:
+  ١ — البحث عن تطبيق الاختبار com.musaed.test.clear بين التطبيقات المثبّتة…
+     وُجد مثبّتاً: mt://installed-app/com.musaed.test.clear
+  ٢ — فتح مساحة عمل مؤقتة للهدف…
+     مساحة العمل: mauwcs0t
+  ٣ — سرد كلاسات DEX للعثور على كلاس البوابة PremiumGate…
+     الكلاس: dex_class:Lcom/musaed/test/clear/PremiumGate;
+  ٤ — قراءة مخطط الكلاس…
+  ✓ تم فتح com.musaed.test.clear وقراءة مخطط PremiumGate
+
+مخطط الكلاس:
+الحقول (0):
+الدوال (3):
+  • <init>
+  • hasPremiumFeatures
+  • isPremium

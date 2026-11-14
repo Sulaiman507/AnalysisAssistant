@@ -1,10 +1,8 @@
 package com.musaed.analysis.mcp
 
 import com.google.gson.Gson
-import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import com.google.gson.JsonParser
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -170,75 +168,18 @@ class GateTester(
         if (result.has("isError") && result.get("isError").isJsonPrimitive &&
             result.get("isError").asBoolean
         ) {
-            val text = runCatching { Gson().toJson(dataOf(result)) }.getOrNull() ?: ""
+            val text = runCatching { Gson().toJson(McpResults.dataOf(result)) }.getOrNull() ?: ""
             throw McpException("الأداة $name أعادت خطأ: ${text.take(300)}")
         }
         return result
     }
 
-    /**
-     * يستخرج كائن data من نتيجة tools/call: structuredContent أولاً، ثم نص
-     * content بصيغة JSON، ثم النتيجة نفسها إن لم يوجد أي منهما.
-     */
-    internal fun dataOf(result: JsonObject): JsonObject {
-        var data: JsonObject? = null
-        if (result.has("structuredContent") && result.get("structuredContent").isJsonObject) {
-            val sc = result.getAsJsonObject("structuredContent")
-            data = if (sc.has("data") && sc.get("data").isJsonObject) sc.getAsJsonObject("data") else sc
-        } else if (result.has("content") && result.get("content").isJsonArray) {
-            for (el in result.getAsJsonArray("content")) {
-                if (!el.isJsonObject) continue
-                val obj = el.asJsonObject
-                if (obj.has("text") && obj.get("text").isJsonPrimitive) {
-                    val text = obj.get("text").asString.trim()
-                    if (text.startsWith("{")) {
-                        try {
-                            val parsed = JsonParser.parseString(text).asJsonObject
-                            data = if (parsed.has("data") && parsed.get("data").isJsonObject) {
-                                parsed.getAsJsonObject("data")
-                            } else {
-                                parsed
-                            }
-                            break
-                        } catch (_: Exception) {
-                            // النص ليس JSON — تابع للعنصر التالي
-                        }
-                    }
-                }
-            }
-        }
-        var out = data ?: result
-        // فك تغليف data المتداخل إن وُجد (بعض الخوادم تغلّف الحمولة مرتين):
-        // يُفك فقط إن لم توجد items في المستوى الحالي.
-        while (out.has("data") && out.get("data").isJsonObject && !out.has("items")) {
-            out = out.getAsJsonObject("data")
-        }
-        return out
-    }
-
-    private fun itemsOf(data: JsonObject): List<JsonObject> {
-        if (data.has("items") && data.get("items").isJsonArray) {
-            return data.getAsJsonArray("items")
-                .mapNotNull { if (it.isJsonObject) it.asJsonObject else null }
-        }
-        return emptyList()
-    }
-
-    private fun firstString(obj: JsonObject, vararg keys: String): String? {
-        for (k in keys) {
-            if (obj.has(k) && obj.get(k).isJsonPrimitive) {
-                val v = obj.get(k).asString
-                if (v.isNotBlank()) return v
-            }
-        }
-        return null
-    }
 
     /** يبحث في قائمة التطبيقات المثبّتة عن حزمة الاختبار ويعيد مسارها. */
     internal fun findInstalledPath(result: JsonObject): String? {
-        for (item in itemsOf(dataOf(result))) {
-            val path = firstString(item, "path")
-            val pkg = firstString(item, "packageName", "package", "name")
+        for (item in McpResults.itemsOf(McpResults.dataOf(result))) {
+            val path = McpResults.firstString(item, "path")
+            val pkg = McpResults.firstString(item, "packageName", "package", "name")
             if (path != null && (path.contains(TEST_PACKAGE) || pkg == TEST_PACKAGE)) return path
         }
         return null
@@ -247,8 +188,8 @@ class GateTester(
     /** يبحث في ملفات APK المتاحة في Home عن ملف تطبيق الاختبار. */
     internal fun findAvailableApkPath(result: JsonObject): String? {
         val want = GATE_APK_FILE.lowercase(Locale.US)
-        for (item in itemsOf(dataOf(result))) {
-            val path = firstString(item, "path") ?: continue
+        for (item in McpResults.itemsOf(McpResults.dataOf(result))) {
+            val path = McpResults.firstString(item, "path") ?: continue
             val lower = path.lowercase(Locale.US)
             if (lower == want || lower.endsWith("/$want")) return path
         }
@@ -256,8 +197,8 @@ class GateTester(
     }
 
     internal fun workspaceIdOf(result: JsonObject): String? {
-        return firstString(dataOf(result), "workspaceId", "workspace_id", "id")
-            ?: firstString(result, "workspaceId", "workspace_id", "id")
+        return McpResults.firstString(McpResults.dataOf(result), "workspaceId", "workspace_id", "id")
+            ?: McpResults.firstString(result, "workspaceId", "workspace_id", "id")
     }
 
     /**
@@ -265,13 +206,13 @@ class GateTester(
      * إن لم يوجد محدد صريح، يُشتق من الواصف (L<com/.../PremiumGate;) كبديل.
      */
     internal fun findGateLocator(result: JsonObject): String? {
-        for (item in itemsOf(dataOf(result))) {
-            val locator = firstString(item, "locator")
-            val name = firstString(item, "name", "className", "descriptor", "class")
+        for (item in McpResults.itemsOf(McpResults.dataOf(result))) {
+            val locator = McpResults.firstString(item, "locator")
+            val name = McpResults.firstString(item, "name", "className", "descriptor", "class")
             val haystack = listOfNotNull(locator, name).joinToString(" ")
             if (!haystack.contains(GATE_CLASS_SIMPLE_NAME)) continue
             if (locator != null) return locator
-            val desc = firstString(item, "descriptor")
+            val desc = McpResults.firstString(item, "descriptor")
             if (desc != null && desc.startsWith("L") && desc.endsWith(";")) {
                 return "dex_class:" + desc.removePrefix("L")
             }
@@ -285,7 +226,7 @@ class GateTester(
 
     /** ينسّق مخطط الكلاس: الحقول ثم الدوال؛ وإن لم يُعرف الشكل يعرض الرد الخام. */
     internal fun formatOutline(result: JsonObject): String {
-        val data = dataOf(result)
+        val data = McpResults.dataOf(result)
         val sb = StringBuilder()
         var found = 0
         for ((label, key) in listOf("الحقول" to "fields", "الدوال" to "methods")) {
@@ -308,8 +249,8 @@ class GateTester(
     private fun entryLine(el: JsonElement): String {
         if (!el.isJsonObject) return el.toString().take(200)
         val obj = el.asJsonObject
-        val name = firstString(obj, "name", "descriptor", "locator", "signature", "text")
-        val extra = firstString(obj, "type", "returnType")
+        val name = McpResults.firstString(obj, "name", "descriptor", "locator", "signature", "text")
+        val extra = McpResults.firstString(obj, "type", "returnType")
         return when {
             name != null && extra != null && extra != name -> "$name : $extra"
             name != null -> name

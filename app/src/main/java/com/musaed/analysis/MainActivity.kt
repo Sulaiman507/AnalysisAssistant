@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Button
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -14,15 +15,20 @@ import com.musaed.analysis.mcp.GateTestStore
 import com.musaed.analysis.mcp.GateTester
 import com.musaed.analysis.mcp.McpClient
 import com.musaed.analysis.mcp.McpException
+import com.musaed.analysis.mcp.SessionLog
+import com.musaed.analysis.mcp.SessionLogStore
+import com.musaed.analysis.mcp.StressTestStore
+import com.musaed.analysis.mcp.StressTester
+import com.musaed.analysis.mcp.ToolRunner
 import com.musaed.analysis.mcp.ToolsListStore
 import java.io.File
 import kotlin.concurrent.thread
 
 /**
- * شاشة الفحص — المرحلة ١: زر واحد يجلب قائمة الأدوات الحية من خدمة MT MCP
- * ويعرضها ويحفظها في ملفين (JSON + نص) لمشاركتهما، وزر «اختبار البوابة»
- * يفتح تطبيق اختبار حقيقي عبر MCP ويقرأ مخطط كلاس البوابة (بوابة قبول
- * المرحلة ١) ويحفظ النتيجة في gate_test.txt.
+ * شاشة الفحص — المرحلة ٢: جلب قائمة الأدوات الحية من خدمة MT MCP، واختبار
+ * البوابة، واختبار إجهاد طبقة الأدوات (٢٠ استدعاء متتالياً)، وعرض سجل
+ * الجلسة. كل استدعاء أداة يمر عبر المغلّف (مهلة + إعادة محاولة واحدة)
+ * ويُسجَّل في سجل الجلسة بنتيجته الخام حرفياً.
  *
  * ملاحظة: حزمة التطبيق com.musaed.analysis مؤقتة وقابلة للتغيير.
  */
@@ -30,15 +36,18 @@ class MainActivity : Activity() {
 
     private lateinit var statusView: TextView
     private lateinit var resultView: TextView
+    private lateinit var targetInput: EditText
     private lateinit var fetchButton: Button
     private lateinit var gateButton: Button
+    private lateinit var stressButton: Button
+    private lateinit var logButton: Button
     private lateinit var shareButton: Button
 
     private var lastDir: File? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // واجهة عربية بسيطة مبنية برمجياً (بلا Compose في المرحلة ١)
+        // واجهة عربية بسيطة مبنية برمجياً (بلا Compose في المرحلة ٢)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(48, 48, 48, 48)
@@ -51,6 +60,10 @@ class MainActivity : Activity() {
             text = getString(R.string.status_not_checked)
             textSize = 16f
         }
+        targetInput = EditText(this).apply {
+            setText(StressTester.DEFAULT_TARGET)
+            hint = getString(R.string.target_package_hint)
+        }
         fetchButton = Button(this).apply {
             text = getString(R.string.fetch_tools)
             setOnClickListener { fetchTools() }
@@ -58,6 +71,14 @@ class MainActivity : Activity() {
         gateButton = Button(this).apply {
             text = getString(R.string.gate_test)
             setOnClickListener { runGateTest() }
+        }
+        stressButton = Button(this).apply {
+            text = getString(R.string.stress_test)
+            setOnClickListener { runStressTest() }
+        }
+        logButton = Button(this).apply {
+            text = getString(R.string.view_log)
+            setOnClickListener { viewSessionLog() }
         }
         val scroll = ScrollView(this)
         resultView = TextView(this).apply {
@@ -71,8 +92,11 @@ class MainActivity : Activity() {
         }
         root.addView(titleView)
         root.addView(statusView)
+        root.addView(targetInput)
         root.addView(fetchButton)
         root.addView(gateButton)
+        root.addView(stressButton)
+        root.addView(logButton)
         root.addView(
             scroll,
             LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
@@ -81,9 +105,17 @@ class MainActivity : Activity() {
         setContentView(root)
     }
 
+    private fun setBusy(busy: Boolean) {
+        fetchButton.isEnabled = !busy
+        gateButton.isEnabled = !busy
+        stressButton.isEnabled = !busy
+        shareButton.isEnabled = !busy && lastDir != null
+    }
+
+    private fun mcpDir(): File = File(filesDir, "mcp")
+
     private fun fetchTools() {
-        fetchButton.isEnabled = false
-        shareButton.isEnabled = false
+        setBusy(true)
         statusView.text = getString(R.string.status_fetching)
         resultView.text = ""
         thread {
@@ -91,7 +123,7 @@ class MainActivity : Activity() {
                 val client = McpClient()
                 client.connect()
                 val tools = client.listTools()
-                val dir = File(filesDir, "mcp")
+                val dir = mcpDir()
                 val (jsonFile, _) = ToolsListStore.save(
                     dir, tools, client.lastServerName, client.lastServerVersion
                 )
@@ -108,41 +140,42 @@ class MainActivity : Activity() {
                             ""
                         }
                     } + "\n\n" + getString(R.string.saved_to, jsonFile.absolutePath)
+                    setBusy(false)
                     shareButton.isEnabled = true
-                    fetchButton.isEnabled = true
                 }
             } catch (e: McpException) {
                 runOnUiThread {
                     statusView.text = getString(R.string.status_failed, e.message ?: "")
                     resultView.text = getString(R.string.how_to_start_service)
-                    fetchButton.isEnabled = true
+                    setBusy(false)
                 }
             } catch (e: Exception) {
                 runOnUiThread {
                     statusView.text = getString(R.string.status_failed, e.message ?: e.toString())
-                    fetchButton.isEnabled = true
+                    setBusy(false)
                 }
             }
         }
     }
 
-    /** اختبار البوابة: فتح تطبيق الاختبار عبر MCP وقراءة مخطط كلاس البوابة. */
+    /** اختبار البوابة عبر المغلّف: يُسجَّل كل استدعاء في سجل الجلسة. */
     private fun runGateTest() {
-        gateButton.isEnabled = false
-        fetchButton.isEnabled = false
-        shareButton.isEnabled = false
+        setBusy(true)
         statusView.text = getString(R.string.status_gate_running)
         resultView.text = ""
         thread {
+            val client = McpClient()
+            val log = SessionLog()
+            val runner = ToolRunner(client::callTool, log)
             try {
-                val client = McpClient()
                 client.connect()
-                val tester = GateTester { name, args -> client.callTool(name, args) }
+                val tester = GateTester { name, args -> runner.call(name, args) }
                 val result = tester.run { step ->
                     runOnUiThread { statusView.text = step }
                 }
-                val dir = File(filesDir, "mcp")
+                val dir = mcpDir()
                 GateTestStore.save(dir, result)
+                SessionLogStore.save(dir, log)
                 lastDir = dir
                 runOnUiThread {
                     statusView.text = if (result.success) {
@@ -155,22 +188,84 @@ class MainActivity : Activity() {
                         getString(R.string.gate_failed, result.summary)
                     }
                     resultView.text = result.report
+                    setBusy(false)
                     shareButton.isEnabled = true
-                    gateButton.isEnabled = true
-                    fetchButton.isEnabled = true
                 }
             } catch (e: McpException) {
                 runOnUiThread {
                     statusView.text = getString(R.string.status_failed, e.message ?: "")
                     resultView.text = getString(R.string.how_to_start_service)
-                    gateButton.isEnabled = true
-                    fetchButton.isEnabled = true
+                    setBusy(false)
                 }
             } catch (e: Exception) {
                 runOnUiThread {
                     statusView.text = getString(R.string.status_failed, e.message ?: e.toString())
-                    gateButton.isEnabled = true
-                    fetchButton.isEnabled = true
+                    setBusy(false)
+                }
+            } finally {
+                runner.shutdown()
+            }
+        }
+    }
+
+    /** اختبار إجهاد طبقة الأدوات: ٢٠ استدعاء متتالياً على التطبيق الهدف. */
+    private fun runStressTest() {
+        val target = targetInput.text.toString().trim().ifBlank { StressTester.DEFAULT_TARGET }
+        setBusy(true)
+        statusView.text = getString(R.string.status_stress_running)
+        resultView.text = ""
+        thread {
+            val client = McpClient()
+            val log = SessionLog()
+            val runner = ToolRunner(client::callTool, log)
+            try {
+                client.connect()
+                val tester = StressTester(runner, log, target)
+                val result = tester.run { step ->
+                    runOnUiThread { statusView.text = step }
+                }
+                val dir = mcpDir()
+                SessionLogStore.save(dir, log)
+                StressTestStore.save(dir, result)
+                lastDir = dir
+                runOnUiThread {
+                    statusView.text = if (result.success) {
+                        getString(R.string.stress_ok, result.callsOk, result.targetPackage)
+                    } else {
+                        getString(R.string.stress_failed, result.summary)
+                    }
+                    resultView.text = result.report
+                    setBusy(false)
+                    shareButton.isEnabled = true
+                }
+            } catch (e: McpException) {
+                runOnUiThread {
+                    statusView.text = getString(R.string.status_failed, e.message ?: "")
+                    resultView.text = getString(R.string.how_to_start_service)
+                    setBusy(false)
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    statusView.text = getString(R.string.status_failed, e.message ?: e.toString())
+                    setBusy(false)
+                }
+            } finally {
+                runner.shutdown()
+            }
+        }
+    }
+
+    /** يعرض سجل الجلسة النصي المحفوظ (إن وُجد). */
+    private fun viewSessionLog() {
+        thread {
+            val file = File(mcpDir(), SessionLogStore.TEXT_FILE)
+            val text = if (file.exists()) file.readText() else null
+            runOnUiThread {
+                if (text != null) {
+                    resultView.text = text
+                    statusView.text = getString(R.string.saved_to, file.absolutePath)
+                } else {
+                    Toast.makeText(this, R.string.no_log_yet, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -178,11 +273,15 @@ class MainActivity : Activity() {
 
     private fun shareList() {
         val dir = lastDir ?: return
-        val json = File(dir, ToolsListStore.JSON_FILE)
-        val txt = File(dir, ToolsListStore.TEXT_FILE)
-        val gate = File(dir, GateTestStore.GATE_FILE)
         val uris = ArrayList<Uri>()
-        listOf(json, txt, gate).filter { it.exists() }.forEach { file ->
+        listOf(
+            ToolsListStore.JSON_FILE,
+            ToolsListStore.TEXT_FILE,
+            GateTestStore.GATE_FILE,
+            SessionLogStore.JSON_FILE,
+            SessionLogStore.TEXT_FILE,
+            StressTestStore.STRESS_FILE,
+        ).map { File(dir, it) }.filter { it.exists() }.forEach { file ->
             uris.add(FileProvider.getUriForFile(this, "${packageName}.fileprovider", file))
         }
         if (uris.isEmpty()) {

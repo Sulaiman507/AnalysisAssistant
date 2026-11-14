@@ -24,7 +24,7 @@ class McpClient(
         const val DEFAULT_URL = "http://127.0.0.1:8787/mcp"
         const val PROTOCOL_VERSION = "2025-03-26"
         const val CLIENT_NAME = "musaed-analysis-probe"
-        const val CLIENT_VERSION = "0.1.0-phase1"
+        const val CLIENT_VERSION = "0.1.2-phase2"
     }
 
     private var sessionId: String? = null

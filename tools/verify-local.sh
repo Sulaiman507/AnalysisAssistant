@@ -1,5 +1,5 @@
 #!/bin/bash
-# التحقق المحلي من مشروع مساعد التحليل (المرحلة ١) بدون Gradle.
+# التحقق المحلي من مشروع مساعد التحليل (المرحلة ٢) بدون Gradle.
 #
 # لماذا بدون Gradle؟ في هذه الحاوية تحديداً، الـ Gradle daemon يبدأ ثم يموت
 # فوراً (فشل IPC: Connection reset by peer عند أول إرسال؛ ولا سجلات daemon)،
@@ -65,7 +65,7 @@ echo "=== 3) اختبارات وحدة MCP ==="
   -cp "$GSON:$WORK/mcp.jar:$JUNIT:$HAMCREST" \
   -d "$WORK/test-classes" mcp/src/test/java/com/musaed/analysis/mcp/*.kt
 java -cp "$WORK/test-classes:$WORK/mcp.jar:$GSON:$JUNIT:$HAMCREST:$STDLIB" \
-  org.junit.runner.JUnitCore com.musaed.analysis.mcp.McpClientTest com.musaed.analysis.mcp.GateTesterTest
+  org.junit.runner.JUnitCore com.musaed.analysis.mcp.McpClientTest com.musaed.analysis.mcp.GateTesterTest com.musaed.analysis.mcp.ToolRunnerTest com.musaed.analysis.mcp.ContextBuilderTest com.musaed.analysis.mcp.SessionLogTest com.musaed.analysis.mcp.StressTestTest
 
 echo "=== 4) فحص العميل ضد خادم وهمي (JSON + SSE) — متخطى في هذه الحاوية ==="
 echo "SKIP: الـ sandbox يمنع اتصالات TCP المباشرة من عمليات JVM في هذه الحاوية"
@@ -85,7 +85,7 @@ sed -e 's|<manifest xmlns:android="http://schemas.android.com/apk/res/android">|
 "$BT/aapt2" link -o "$WORK/unsigned.apk" -I "$ANDROID_JAR" \
   --manifest "$WORK/AndroidManifest.xml" \
   --min-sdk-version 26 --target-sdk-version 36 \
-  --version-code 2 --version-name 0.1.1-phase1-gate \
+  --version-code 3 --version-name 0.1.2-phase2 \
   --java "$WORK/generated" \
   "$WORK/res.zip"
 "$KOTLINC" -jvm-target 17 \

@@ -12,8 +12,8 @@ android {
         applicationId = "com.musaed.analysis"
         minSdk = 26
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.1.3-phase2"
+        versionCode = 5
+        versionName = "0.1.4-phase3"
     }
 
     buildTypes {

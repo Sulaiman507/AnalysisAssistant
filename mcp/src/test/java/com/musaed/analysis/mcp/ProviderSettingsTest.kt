@@ -1,0 +1,48 @@
+package com.musaed.analysis.mcp
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class ProviderSettingsTest {
+
+    @Test
+    fun `deepseek is the default`() {
+        val s = ProviderSettings.deepSeek()
+        assertEquals("DeepSeek", s.name)
+        assertEquals("https://api.deepseek.com/v1", s.baseUrl)
+        assertEquals("/chat/completions", s.apiPath)
+        assertEquals("deepseek-reasoner", s.model)
+        assertFalse(s.isConfigured())
+        assertTrue(ProviderSettings.deepSeek("sk-x").isConfigured())
+    }
+
+    @Test
+    fun `gonkaRouter preset matches the official docs`() {
+        val s = ProviderSettings.gonkaRouter()
+        assertEquals("GonkaRouter", s.name)
+        assertEquals("https://api.gonkarouter.io/v1", s.baseUrl)
+        assertEquals("/chat/completions", s.apiPath)
+        assertEquals("deepseek-ai/DeepSeek-V4-Flash-0731", s.model)
+        assertFalse(s.isConfigured())
+        assertTrue(ProviderSettings.gonkaRouter("gk-x").isConfigured())
+    }
+
+    @Test
+    fun `json round trip preserves all fields`() {
+        val s = ProviderSettings.gonkaRouter("gk-secret")
+        val restored = ProviderSettings.fromJson(s.toJson())
+        assertEquals(s, restored)
+        assertEquals("deepseek-ai/DeepSeek-V4-Flash-0731", restored!!.toModelConfig().model)
+        assertEquals("https://api.gonkarouter.io/v1", restored.toModelConfig().baseUrl)
+    }
+
+    @Test
+    fun `fromJson returns null for invalid input`() {
+        assertNull(ProviderSettings.fromJson(null))
+        assertNull(ProviderSettings.fromJson(""))
+        assertNull(ProviderSettings.fromJson("not json"))
+    }
+}

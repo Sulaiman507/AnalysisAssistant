@@ -125,4 +125,24 @@ internal object McpResults {
         }
         return null
     }
+
+    /**
+     * عدد نتائج البحث: hits أولاً (هكذا يرجعها mt_apk_search حياً: مصفوفة
+     * hits)، ثم items، ثم pagination.returnedCount — يُؤخذ الأكبر منها.
+     * يُستخدم للسؤال «هل وُجد شيء؟» لا للعدّ الدقيق عبر الصفحات.
+     */
+    fun searchHitsCount(data: JsonObject): Int {
+        var n = 0
+        if (data.has("hits") && data.get("hits").isJsonArray) {
+            n = maxOf(n, data.getAsJsonArray("hits").size())
+        }
+        n = maxOf(n, itemsOf(data).size)
+        if (data.has("pagination") && data.get("pagination").isJsonObject) {
+            intOf(
+                data.getAsJsonObject("pagination"),
+                "returnedCount", "totalAvailableCount",
+            )?.let { n = maxOf(n, it) }
+        }
+        return n
+    }
 }

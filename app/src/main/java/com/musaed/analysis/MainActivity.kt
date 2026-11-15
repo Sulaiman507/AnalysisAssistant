@@ -3,6 +3,8 @@ package com.musaed.analysis
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.text.InputType
@@ -33,10 +35,10 @@ import java.io.File
 import kotlin.concurrent.thread
 
 /**
- * شاشة الفحص — المرحلة ٢: جلب قائمة الأدوات الحية من خدمة MT MCP، واختبار
- * البوابة، واختبار إجهاد طبقة الأدوات (٢٠ استدعاء متتالياً)، وعرض سجل
- * الجلسة. كل استدعاء أداة يمر عبر المغلّف (مهلة + إعادة محاولة واحدة)
- * ويُسجَّل في سجل الجلسة بنتيجته الخام حرفياً.
+ * الشاشة الرئيسية — واجهة داكنة رسمية (أخضر غامق + ذهبي)، بطاقات مقسّمة
+ * (الهدف / الإجراءات / إعدادات النموذج / النتائج)، وكل الصفحة في تمريرة
+ * واحدة بلا تمرير متداخل. كل استدعاء أداة يمر عبر المغلّف (مهلة + إعادة
+ * محاولة واحدة) ويُسجَّل في سجل الجلسة بنتيجته الخام حرفياً.
  *
  * ملاحظة: حزمة التطبيق com.musaed.analysis مؤقتة وقابلة للتغيير.
  */
@@ -67,149 +69,239 @@ class MainActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // واجهة عربية بسيطة مبنية برمجياً (بلا Compose في المرحلة ٢)
+        // كل الصفحة في تمريرة واحدة — لا تمرير متداخل: الأقسام والنتائج
+        // كلها في ScrollView واحد، فلا تنقطع الأزرار ولا الحقول عن الشاشة.
+        val scroll = ScrollView(this)
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(48, 48, 48, 48)
+            setBackgroundColor(0xFF121212.toInt())
+            setPadding(dp(16), dp(16), dp(16), dp(16))
         }
+        scroll.addView(root)
+
         val titleView = TextView(this).apply {
             text = getString(R.string.app_name)
             textSize = 24f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(0xFFF5F5F5.toInt())
         }
         statusView = TextView(this).apply {
             text = getString(R.string.status_not_checked)
-            textSize = 16f
-        }
-        targetInput = EditText(this).apply {
-            setText(StressTester.DEFAULT_TARGET)
-            hint = getString(R.string.target_package_hint)
-        }
-        fetchButton = Button(this).apply {
-            text = getString(R.string.fetch_tools)
-            setOnClickListener { fetchTools() }
-        }
-        gateButton = Button(this).apply {
-            text = getString(R.string.gate_test)
-            setOnClickListener { runGateTest() }
-        }
-        stressButton = Button(this).apply {
-            text = getString(R.string.stress_test)
-            setOnClickListener { runStressTest() }
-        }
-        logButton = Button(this).apply {
-            text = getString(R.string.view_log)
-            setOnClickListener { viewSessionLog() }
-        }
-        val scroll = ScrollView(this)
-        resultView = TextView(this).apply {
             textSize = 15f
-        }
-        scroll.addView(resultView)
-        shareButton = Button(this).apply {
-            text = getString(R.string.share_list)
-            isEnabled = false
-            setOnClickListener { shareList() }
+            setTextColor(0xFFE0E0E0.toInt())
+            setPadding(0, dp(6), 0, dp(4))
         }
         root.addView(titleView)
         root.addView(statusView)
-        root.addView(targetInput)
-        root.addView(fetchButton)
-        root.addView(gateButton)
-        root.addView(stressButton)
-        root.addView(logButton)
-        // إعدادات مزوّد النموذج (المرحلة 3) — كما في شاشة «Add Provider»:
-        // الاسم والمفتاح وBase URL والمسار والنموذج. المفتاح يبقى في الجهاز
-        // فقط (SharedPreferences) ولا يُرسل إلا إلى المزوّد نفسه.
-        val settingsTitle = TextView(this).apply {
-            text = getString(R.string.settings_title)
-            textSize = 20f
+
+        // بطاقة الهدف
+        val targetCard = sectionCard()
+        targetCard.addView(sectionTitle(getString(R.string.target_title)))
+        targetInput = styledField(getString(R.string.target_package_hint)).apply {
+            setText(StressTester.DEFAULT_TARGET)
         }
-        val presetRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
+        targetCard.addView(targetInput)
+        addCard(root, targetCard)
+
+        // بطاقة الإجراءات
+        val actionsCard = sectionCard()
+        actionsCard.addView(sectionTitle(getString(R.string.actions_title)))
+        fetchButton = styledButton(getString(R.string.fetch_tools), false).apply {
+            setOnClickListener { fetchTools() }
         }
-        val presetDeepSeek = Button(this).apply {
-            text = getString(R.string.settings_preset_deepseek)
-            setOnClickListener { applyProviderPreset(ProviderSettings.deepSeek(apiKeyInput.text.toString().trim())) }
+        gateButton = styledButton(getString(R.string.gate_test), false).apply {
+            setOnClickListener { runGateTest() }
         }
-        val presetGonka = Button(this).apply {
-            text = getString(R.string.settings_preset_gonka)
-            setOnClickListener { applyProviderPreset(ProviderSettings.gonkaRouter(apiKeyInput.text.toString().trim())) }
+        stressButton = styledButton(getString(R.string.stress_test), false).apply {
+            setOnClickListener { runStressTest() }
         }
-        presetRow.addView(
-            presetDeepSeek,
-            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        )
-        presetRow.addView(
-            presetGonka,
-            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        )
-        providerNameInput = EditText(this).apply {
-            hint = getString(R.string.settings_name_hint)
+        logButton = styledButton(getString(R.string.view_log), false).apply {
+            setOnClickListener { viewSessionLog() }
         }
-        apiKeyInput = EditText(this).apply {
-            hint = getString(R.string.settings_key_hint)
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-        }
-        baseUrlInput = EditText(this).apply {
-            hint = getString(R.string.settings_base_hint)
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
-        }
-        apiPathInput = EditText(this).apply {
-            hint = getString(R.string.settings_path_hint)
-        }
-        modelInput = EditText(this).apply {
-            hint = getString(R.string.settings_model_hint)
-        }
-        val settingsRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-        }
-        fetchModelsButton = Button(this).apply {
-            text = getString(R.string.settings_fetch)
-            setOnClickListener { fetchModels() }
-        }
-        saveSettingsButton = Button(this).apply {
-            text = getString(R.string.settings_save)
-            setOnClickListener { saveProviderSettings() }
-        }
-        settingsRow.addView(
-            fetchModelsButton,
-            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        )
-        settingsRow.addView(
-            saveSettingsButton,
-            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        )
-        settingsStatus = TextView(this).apply {
-            textSize = 15f
-        }
-        root.addView(settingsTitle)
-        root.addView(presetRow)
-        root.addView(providerNameInput)
-        root.addView(apiKeyInput)
-        root.addView(baseUrlInput)
-        root.addView(apiPathInput)
-        root.addView(modelInput)
-        root.addView(settingsRow)
-        root.addView(settingsStatus)
-        analysisButton = Button(this).apply {
-            text = getString(R.string.analysis_run)
+        actionsCard.addView(buttonRow(fetchButton, gateButton))
+        actionsCard.addView(buttonRow(stressButton, logButton))
+        analysisButton = styledButton(getString(R.string.analysis_run), true).apply {
             setOnClickListener { runAnalysis() }
         }
-        root.addView(analysisButton)
-        root.addView(
-            scroll,
-            LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
+        actionsCard.addView(analysisButton, fullWidthParams())
+        shareButton = styledButton(getString(R.string.share_list), false).apply {
+            isEnabled = false
+            setOnClickListener { shareList() }
+        }
+        actionsCard.addView(shareButton, fullWidthParams())
+        addCard(root, actionsCard)
+
+        // بطاقة إعدادات النموذج — المفتاح يبقى في الجهاز فقط
+        // (SharedPreferences) ولا يُرسل إلا إلى المزوّد نفسه.
+        val settingsCard = sectionCard()
+        settingsCard.addView(sectionTitle(getString(R.string.settings_title)))
+        val presetDeepSeek = styledButton(getString(R.string.settings_preset_deepseek), false).apply {
+            setOnClickListener { applyProviderPreset(ProviderSettings.deepSeek(apiKeyInput.text.toString().trim())) }
+        }
+        val presetGonka = styledButton(getString(R.string.settings_preset_gonka), false).apply {
+            setOnClickListener { applyProviderPreset(ProviderSettings.gonkaRouter(apiKeyInput.text.toString().trim())) }
+        }
+        settingsCard.addView(buttonRow(presetDeepSeek, presetGonka))
+        settingsCard.addView(fieldLabel(getString(R.string.settings_name_label)))
+        providerNameInput = styledField(getString(R.string.settings_name_hint))
+        settingsCard.addView(providerNameInput)
+        settingsCard.addView(fieldLabel(getString(R.string.settings_key_label)))
+        apiKeyInput = styledField(getString(R.string.settings_key_hint)).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        settingsCard.addView(apiKeyInput)
+        settingsCard.addView(fieldLabel(getString(R.string.settings_base_label)))
+        baseUrlInput = styledField(getString(R.string.settings_base_hint)).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+        }
+        settingsCard.addView(baseUrlInput)
+        settingsCard.addView(fieldLabel(getString(R.string.settings_path_label)))
+        apiPathInput = styledField(getString(R.string.settings_path_hint))
+        settingsCard.addView(apiPathInput)
+        settingsCard.addView(fieldLabel(getString(R.string.settings_model_label)))
+        modelInput = styledField(getString(R.string.settings_model_hint))
+        settingsCard.addView(modelInput)
+        fetchModelsButton = styledButton(getString(R.string.settings_fetch), false).apply {
+            setOnClickListener { fetchModels() }
+        }
+        saveSettingsButton = styledButton(getString(R.string.settings_save), false).apply {
+            setOnClickListener { saveProviderSettings() }
+        }
+        settingsCard.addView(buttonRow(fetchModelsButton, saveSettingsButton))
+        settingsStatus = TextView(this).apply {
+            textSize = 14f
+            setTextColor(0xFFB0B0B0.toInt())
+            setPadding(0, dp(8), 0, 0)
+        }
+        settingsCard.addView(settingsStatus)
+        addCard(root, settingsCard)
+
+        // بطاقة النتائج
+        val resultsCard = sectionCard()
+        val resultsHeader = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
+        val resultsTitle = sectionTitle(getString(R.string.results_title)).apply {
+            setPadding(0, 0, 0, 0)
+        }
+        resultsHeader.addView(
+            resultsTitle,
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         )
-        root.addView(shareButton)
-        setContentView(root)
+        val clearButton = styledButton(getString(R.string.clear_results), false).apply {
+            setOnClickListener { resultView.text = "" }
+        }
+        resultsHeader.addView(clearButton)
+        resultsCard.addView(resultsHeader)
+        resultView = TextView(this).apply {
+            textSize = 15f
+            setTextColor(0xFFE0E0E0.toInt())
+            minHeight = dp(120)
+            setPadding(0, dp(8), 0, 0)
+        }
+        resultsCard.addView(resultView)
+        addCard(root, resultsCard)
+
+        setContentView(scroll)
         loadProviderSettings()
     }
+
+    // ——— عناصر الواجهة الداكنة الرسمية ———
+
+    private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+
+    private fun roundedBg(fill: Int, stroke: Int = 0, radiusDp: Int = 12): GradientDrawable =
+        GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = dp(radiusDp).toFloat()
+            setColor(fill)
+            if (stroke != 0) setStroke(dp(1), stroke)
+        }
+
+    private fun sectionCard(): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        background = roundedBg(0xFF1E1E1E.toInt(), 0xFF333333.toInt())
+        setPadding(dp(16), dp(14), dp(16), dp(14))
+    }
+
+    private fun addCard(parent: LinearLayout, card: LinearLayout) {
+        parent.addView(
+            card,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { bottomMargin = dp(12) },
+        )
+    }
+
+    private fun sectionTitle(text: String): TextView = TextView(this).apply {
+        this.text = text
+        textSize = 16f
+        setTypeface(null, Typeface.BOLD)
+        setTextColor(0xFFC9A227.toInt())
+        setPadding(0, 0, 0, dp(10))
+    }
+
+    private fun fieldLabel(text: String): TextView = TextView(this).apply {
+        this.text = text
+        textSize = 13f
+        setTextColor(0xFFB0B0B0.toInt())
+        setPadding(0, dp(8), 0, dp(4))
+    }
+
+    private fun styledField(hint: String): EditText = EditText(this).apply {
+        this.hint = hint
+        textSize = 15f
+        setTextColor(0xFFF5F5F5.toInt())
+        setHintTextColor(0xFF9E9E9E.toInt())
+        background = roundedBg(0xFF2A2A2A.toInt(), 0xFF444444.toInt(), 10)
+        setPadding(dp(12), dp(10), dp(12), dp(10))
+        minHeight = dp(48)
+    }
+
+    private fun styledButton(text: String, primary: Boolean): Button = Button(this).apply {
+        this.text = text
+        textSize = if (primary) 17f else 15f
+        setTextColor(0xFFFFFFFF.toInt())
+        if (primary) {
+            setTypeface(null, Typeface.BOLD)
+            background = roundedBg(0xFF1B5E4B.toInt(), 0, 10)
+        } else {
+            background = roundedBg(0xFF2A2A2A.toInt(), 0xFF444444.toInt(), 10)
+        }
+        minHeight = dp(if (primary) 54 else 48)
+        setPadding(dp(8), 0, dp(8), 0)
+    }
+
+    private fun buttonRow(vararg buttons: Button): LinearLayout =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            buttons.forEachIndexed { i, b ->
+                addView(
+                    b,
+                    LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                        if (i > 0) leftMargin = dp(8)
+                        topMargin = dp(4)
+                        bottomMargin = dp(4)
+                    },
+                )
+            }
+        }
+
+    private fun fullWidthParams(): LinearLayout.LayoutParams =
+        LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        ).apply { topMargin = dp(8) }
 
     private fun setBusy(busy: Boolean) {
         fetchButton.isEnabled = !busy
         gateButton.isEnabled = !busy
         stressButton.isEnabled = !busy
+        logButton.isEnabled = !busy
         analysisButton.isEnabled = !busy
+        fetchModelsButton.isEnabled = !busy
+        saveSettingsButton.isEnabled = !busy
         shareButton.isEnabled = !busy && lastDir != null
     }
 

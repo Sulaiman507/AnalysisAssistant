@@ -44,4 +44,13 @@
     <string name="analysis_ok">نجح التحليل ✓ — %1$d خطوة على %2$s</string>
     <string name="analysis_failed">فشل التحليل: %1$s</string>
     <string name="analysis_no_provider">أدخل مفتاح API واختر نموذجاً في الإعدادات أولاً ثم احفظ.</string>
+    <string name="target_title">التطبيق الهدف</string>
+    <string name="actions_title">الإجراءات</string>
+    <string name="results_title">النتائج</string>
+    <string name="clear_results">مسح</string>
+    <string name="settings_name_label">الاسم</string>
+    <string name="settings_key_label">مفتاح API</string>
+    <string name="settings_base_label">API Base URL</string>
+    <string name="settings_path_label">API Path</string>
+    <string name="settings_model_label">النموذج</string>
 </resources>

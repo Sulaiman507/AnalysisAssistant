@@ -1,5 +1,6 @@
 package com.musaed.analysis.mcp
 
+import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 
@@ -35,6 +36,8 @@ class AnalysisLoop(
     private val log: SessionLog,
     private val systemPrompt: String,
     private val maxSteps: Int = 40,
+    /** دليل الأدوات المرسل للنموذج — الأسماء والمعاملات الحرفية (ToolCatalog). */
+    private val toolCatalog: String = ToolCatalog.TEXT,
 ) {
     companion object {
         const val DEFAULT_MAX_STEPS = 40
@@ -112,14 +115,38 @@ class AnalysisLoop(
                 }
                 is Action.ToolCall -> {
                     consecutiveMalformed = 0
+                    // تحقق محلي من الاسم قبل الوصول للخادم: الأداة المخترعة
+                    // لا تُستدعى أصلاً — تُسجَّل وتُصحَّح برسالة فورية.
+                    // (دليل حي 2026-11-15: النموذج طلب أدوات غير موجودة
+                    // أصلاً فأضاع خطوات كاملة باستدعاء خادم + إعادة محاولة.)
+                    if (action.tool !in ToolCatalog.NAMES) {
+                        notes += "النموذج طلب أداة غير موجودة: ${action.tool} (خطوة $stepsUsed)."
+                        log.record(
+                            step = stepsUsed, attempt = 1, tool = action.tool,
+                            argumentsJson = Gson().toJson(action.arguments),
+                            status = "error", durationMs = 0, rawResult = "",
+                            error = "الأداة ${action.tool} غير موجودة في قائمة أدوات MT MCP.",
+                        )
+                        messages += ChatMessage(
+                            "user",
+                            "الأداة ${action.tool} غير موجودة. الأدوات المتاحة هي: " +
+                                ToolCatalog.NAMES.joinToString(", ") +
+                                ". استخدم واحدة منها بالمعاملات الموضحة في الدليل، ولا تخترع أداة.",
+                        )
+                        continue
+                    }
                     onStep("خطوة $stepsUsed/$maxSteps: ${action.tool}…")
                     val result = try {
                         runner.call(action.tool, action.arguments, step = stepsUsed)
                     } catch (e: McpException) {
+                        // تفصيل خطأ الخادم الكامل (المسموح + مثال) بدل الرسالة
+                        // المقتطعة — به يصحّح النموذج معاملاته من محاولة واحدة.
+                        val detail = McpResults.serverErrorText(e.rawResult)
+                            ?: (e.message ?: e.toString())
                         messages += ChatMessage(
                             "user",
-                            "الأداة ${action.tool} فشلت: ${e.message ?: e.toString()} — " +
-                                "جرّب أداة أو معاملات مختلفة، أو انتقل لخطوة أخرى.",
+                            "الأداة ${action.tool} فشلت: $detail — صحّح المعاملات " +
+                                "حسب الدليل وأعد المحاولة، أو انتقل لخطوة أخرى.",
                         )
                         continue
                     }
@@ -215,6 +242,8 @@ class AnalysisLoop(
             appendLine("حلّل التطبيق $targetPackage (مساحة العمل $workspaceId).")
             appendLine()
             appendLine(scanText)
+            appendLine()
+            appendLine(toolCatalog)
             appendLine()
             appendLine("في كل خطوة أجب بكائن JSON واحد فقط:")
             appendLine("  لتنفيذ أداة: {\"tool\": \"<اسم أداة MT MCP>\", \"arguments\": {...}}")

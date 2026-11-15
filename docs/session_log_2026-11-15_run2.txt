@@ -1,0 +1,459 @@
+سجل جلسة — مساعد التحليل
+عدد الإدخالات: 59
+
+[1] خطوة 0 — محاولة 1 — 2026-11-15 22:12:03
+    الأداة: mt_apk_list_installed_apps
+    المعاملات: {"query":"com.musaed.test.clear","appType":"user","limit":50}
+    الحالة: ok — المدة: 2475ms
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":true,\"data\":{\"query\":\"com.musaed.test.clear\",\"appType\":\"user\",\"items\":[{\"appLabel\":\"Musaed Test Clear\",\"packageName\":\"com.musaed.test.clear\",\"versionName\":\"1.0\",\"versionCode\":\"1\",\"systemApp\":false,\"enabled\":true,\"minSdk\":26,\"targetSdk\":36,\"size\":12713,\"baseApkSize\":12713,\"splitCount\":0,\"path\":\"mt://installed-app/com.musaed.test.clear\"}],\"warnings\":[],\"pagination\":{\"hasMore\":false,\"nextCursor\":null,\"returnedCount\":1,\"limitMax\":200,\"totalAvailableCount\":null}},\"error\":null,\"nextActions\":[]}"}],"structuredContent":{"ok":true,"data":{"query":"com.musaed.test.clear","appType":"user","items":[{"appLabel":"Musaed Test Clear","packageName":"com.musaed.test.clear","versionName":"1.0","versionCode":"1","systemApp":false,"enabled":true,"minSdk":26,"targetSdk":36,"size":12713,"baseApkSize":12713,"splitCount":0,"path":"mt://installed-app/com.musaed.test.clear"}],"warnings":[],"pagination":{"hasMore":false,"returnedCount":1,"limitMax":200}},"nextActions":[]},"isError":false}
+
+[2] خطوة 0 — محاولة 1 — 2026-11-15 22:12:03
+    الأداة: mt_apk_workspace_open
+    المعاملات: {"path":"mt://installed-app/com.musaed.test.clear","temporary":true}
+    الحالة: ok — المدة: 114ms
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":true,\"data\":{\"workspaceId\":\"qdsnpvgq\",\"temporary\":true,\"apkFileName\":\"base.apk\",\"packageName\":\"com.musaed.test.clear\",\"versionName\":\"1.0\",\"versionCode\":1,\"minSdk\":26,\"targetSdk\":36,\"appLabel\":\"Musaed Test Clear\",\"installedApp\":{\"packageName\":\"com.musaed.test.clear\",\"splitCount\":0},\"counts\":{\"zipEntries\":6,\"dexEntries\":1,\"xmlEntries\":1,\"classes\":3},\"capabilities\":{\"canReadAxml\":true,\"canSearchDexNames\":true,\"canSearchDexStrings\":true,\"canReadResourceTable\":true},\"signature\":{\"available\":true,\"signaturePresent\":true,\"schemes\":[\"V1\",\"V2\",\"V3\"],\"hasDifferentCertificates\":false,\"certificates\":[{\"schemes\":[\"V1\",\"V2\",\"V3\"],\"sha256\":\"669bdee0caee428cc6846005b94584e2946bfecc6b4c22eff80c3736c3da7ec8\"}],\"error\":null},\"resourceTableSummaryError\":null},\"error\":null,\"nextActions\":[{\"tool\":\"mt_apk_read_text\",\"purpose\":\"inspect\",\"description\":\"Read decoded AndroidManifest.xml\",\"arguments\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"locator\":\"axml:AndroidManifest.xml\",\"limit\":500,\"maxChars\":49152,\"startLine\":0,\"startColumn\":0}},{\"tool\":\"mt_apk_list_entries\",\"purpose\":\"inspect\",\"description\":\"List APK ZIP entries\",\"arguments\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"prefix\":\"\",\"limit\":200}},{\"tool\":\"mt_apk_dex_list_classes\",\"purpose\":\"inspect\",\"description\":\"List dex classes\",\"arguments\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"prefix\":\"\",\"limit\":200}},{\"tool\":\"mt_apk_resource_list\",\"purpose\":\"inspect\",\"description\":\"List resource table\",\"arguments\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"view\":\"resource_table\",\"typeName\":\"*\",\"variant\":\"*\",\"limit\":200}},{\"tool\":\"mt_apk_workspace_delete\",\"purpose\":\"cleanup\",\"description\":\"Clean up this temporary workspace only after it is no longer needed\",\"arguments\":{\"workspaceId\":\"qdsnpvgq\"}}]}"}],"structuredContent":{"ok":true,"data":{"workspaceId":"qdsnpvgq","temporary":true,"apkFileName":"base.apk","packageName":"com.musaed.test.clear","versionName":"1.0","versionCode":1,"minSdk":26,"targetSdk":36,"appLabel":"Musaed Test Clear","installedApp":{"packageName":"com.musaed.test.clear","splitCount":0},"counts":{"zipEntries":6,"dexEntries":1,"xmlEntries":1,"classes":3},"capabilities":{"canReadAxml":true,"canSearchDexNames":true,"canSearchDexStrings":true,"canReadResourceTable":true},"signature":{"available":true,"signaturePresent":true,"schemes":["V1","V2","V3"],"hasDifferentCertificates":false,"certificates":[{"schemes":["V1","V2","V3"],"sha256":"669bdee0caee428cc6846005b94584e2946bfecc6b4c22eff80c3736c3da7ec8"}]}},"nextActions":[{"tool":"mt_apk_read_text","purpose":"inspect","description":"Read decoded AndroidManifest.xml","arguments":{"workspaceId":"qdsnpvgq","editSessionId":"","locator":"axml:AndroidManifest.xml","limit":500,"maxChars":49152,"startLine":0,"startColumn":0}},{"tool":"mt_apk_list_entries","purpose":"inspect","description":"List APK ZIP entries","arguments":{"workspaceId":"qdsnpvgq","editSessionId":"","prefix":"","limit":200}},{"tool":"mt_apk_dex_list_classes","purpose":"inspect","description":"List dex classes","arguments":{"workspaceId":"qdsnpvgq","editSessionId":"","prefix":"","limit":200}},{"tool":"mt_apk_resource_list","purpose":"inspect","description":"List resource table","arguments":{"workspaceId":"qdsnpvgq","editSessionId":"","view":"resource_table","typeName":"*","variant":"*","limit":200}},{"tool":"mt_apk_workspace_delete","purpose":"cleanup","description":"Clean up this temporary workspace only after it is no longer needed","arguments":{"workspaceId":"qdsnpvgq"}}]},"isError":false}
+
+[3] خطوة 0 — محاولة 1 — 2026-11-15 22:12:03
+    الأداة: mt_apk_search
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"","target":"overview","query":"premium","queryType":"literal","caseSensitive":false,"matchMode":"contains","prefix":"","includeMatchOffsets":false,"limit":50,"snippetMaxChars":240}
+    الحالة: ok — المدة: 100ms
+    النتيجة الخام (مقتطعة عند 4000 حرف — الكامل في JSON):
+{"content":[{"type":"text","text":"{\"ok\":true,\"data\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"hits\":[{\"locator\":\"dex_class:Lcom/musaed/test/clear/PremiumGate;\",\"searchScope\":\"dex_class\",\"hit\":{\"kind\":\"dex_class_name\",\"matchKind\":\"class\",\"matchOffsets\":null}},{\"locator\":\"dex_method:Lcom/musaed/test/clear/PremiumGate;-\u003ehasPremiumFeatures(Landroid/content/Context;)Z\",\"searchScope\":\"dex_method\",\"hit\":{\"kind\":\"dex_method_name\",\"matchKind\":\"method\",\"matchOffsets\":null}},{\"locator\":\"dex_method:Lcom/musaed/test/clear/PremiumGate;-\u003eisPremium(Landroid/content/Context;)Z\",\"searchScope\":\"dex_method\",\"hit\":{\"kind\":\"dex_method_name\",\"matchKind\":\"method\",\"matchOffsets\":null}},{\"locator\":\"dex_class:Lcom/musaed/test/clear/MainActivity$1;\",\"searchScope\":\"dex_string\",\"hit\":{\"kind\":\"dex_string_matches\",\"matchKind\":\"string\",\"snippet\":\"Premium: UNLOCKED\",\"matchOffsets\":null,\"matchCount\":2,\"matchedStrings\":[{\"text\":\"Premium: UNLOCKED\",\"textStartOffset\":0,\"textTruncated\":false,\"matchOffsets\":null},{\"text\":\"Premium: locked — upgrade to unlock\",\"textStartOffset\":0,\"textTruncated\":false,\"matchOffsets\":null}],\"matchedStringsTruncated\":false}},{\"locator\":\"dex_class:Lcom/musaed/test/clear/MainActivity;\",\"searchScope\":\"dex_string\",\"hit\":{\"kind\":\"dex_string_matches\",\"matchKind\":\"string\",\"snippet\":\"Open Premium section\",\"matchOffsets\":null,\"matchCount\":1,\"matchedStrings\":[{\"text\":\"Open Premium section\",\"textStartOffset\":0,\"textTruncated\":false,\"matchOffsets\":null}],\"matchedStringsTruncated\":false}},{\"locator\":\"dex_class:Lcom/musaed/test/clear/PremiumGate;\",\"searchScope\":\"dex_string\",\"hit\":{\"kind\":\"dex_string_matches\",\"matchKind\":\"string\",\"snippet\":\"PremiumGate.java\",\"matchOffsets\":null,\"matchCount\":2,\"matchedStrings\":[{\"text\":\"PremiumGate.java\",\"textStartOffset\":0,\"textTruncated\":false,\"matchOffsets\":null},{\"text\":\"isPremium\",\"textStartOffset\":0,\"textTruncated\":false,\"matchOffsets\":null}],\"matchedStringsTruncated\":false}}],\"filterHint\":{\"code\":\"\",\"message\":\"\"},\"notSearchedTargets\":[\"smali\",\"native_symbols\",\"native_strings\",\"resource_table_file_paths\"],\"skippedScopes\":[],\"pagination\":{\"hasMore\":false,\"nextCursor\":null,\"returnedCount\":6,\"limitMax\":200,\"totalAvailableCount\":null}},\"error\":null,\"nextActions\":[]}"}],"structuredContent":{"ok":true,"data":{"workspaceId":"qdsnpvgq","editSessionId":"","hits":[{"locator":"dex_class:Lcom/musaed/test/clear/PremiumGate;","searchScope":"dex_class","hit":{"kind":"dex_class_name","matchKind":"class"}},{"locator":"dex_method:Lcom/musaed/test/clear/PremiumGate;-\u003ehasPremiumFeatures(Landroid/content/Context;)Z","searchScope":"dex_method","hit":{"kind":"dex_method_name","matchKind":"method"}},{"locator":"dex_method:Lcom/musaed/test/clear/PremiumGate;-\u003eisPremium(Landroid/content/Context;)Z","searchScope":"dex_method","hit":{"kind":"dex_method_name","matchKind":"method"}},{"locator":"dex_class:Lcom/musaed/test/clear/MainActivity$1;","searchScope":"dex_string","hit":{"kind":"dex_string_matches","matchKind":"string","snippet":"Premium: UNLOCKED","matchCount":2,"matchedStrings":[{"text":"Premium: UNLOCKED","textStartOffset":0,"textTruncated":false},{"text":"Premium: locked — upgrade to unlock","textStartOffset":0,"textTruncated":false}],"matchedStringsTruncated":false}},{"locator":"dex_class:Lcom/musaed/test/clear/MainActivity;","searchScope":"dex_string","hit":{"kind":"dex_string_matches","matchKind":"string","snippet":"Open Premium section","matchCount":1,"matchedStrings":[{"text":"Open Premium section","textStartOffset":0,"textTruncated":false}],"matchedStringsTruncated":false}},{"locator":"dex_class:Lcom/musaed/test/clear/PremiumGate;","searchScope":"dex_string","hit":{"kind":"dex_string_matches","matchKind":"string","snippet":"PremiumGate.java","matchCount":
+    … (اقتُطعت — النتيجة الكاملة في session_log.json)
+
+[4] خطوة 0 — محاولة 1 — 2026-11-15 22:12:03
+    الأداة: mt_apk_search
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"","target":"overview","query":"isPremium","queryType":"literal","caseSensitive":false,"matchMode":"contains","prefix":"","includeMatchOffsets":false,"limit":50,"snippetMaxChars":240}
+    الحالة: ok — المدة: 95ms
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":true,\"data\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"hits\":[{\"locator\":\"dex_method:Lcom/musaed/test/clear/PremiumGate;-\u003eisPremium(Landroid/content/Context;)Z\",\"searchScope\":\"dex_method\",\"hit\":{\"kind\":\"dex_method_name\",\"matchKind\":\"method\",\"matchOffsets\":null}},{\"locator\":\"dex_class:Lcom/musaed/test/clear/PremiumGate;\",\"searchScope\":\"dex_string\",\"hit\":{\"kind\":\"dex_string_matches\",\"matchKind\":\"string\",\"snippet\":\"isPremium\",\"matchOffsets\":null,\"matchCount\":1,\"matchedStrings\":[{\"text\":\"isPremium\",\"textStartOffset\":0,\"textTruncated\":false,\"matchOffsets\":null}],\"matchedStringsTruncated\":false}}],\"filterHint\":{\"code\":\"\",\"message\":\"\"},\"notSearchedTargets\":[\"smali\",\"native_symbols\",\"native_strings\",\"resource_table_file_paths\"],\"skippedScopes\":[],\"pagination\":{\"hasMore\":false,\"nextCursor\":null,\"returnedCount\":2,\"limitMax\":200,\"totalAvailableCount\":null}},\"error\":null,\"nextActions\":[]}"}],"structuredContent":{"ok":true,"data":{"workspaceId":"qdsnpvgq","editSessionId":"","hits":[{"locator":"dex_method:Lcom/musaed/test/clear/PremiumGate;-\u003eisPremium(Landroid/content/Context;)Z","searchScope":"dex_method","hit":{"kind":"dex_method_name","matchKind":"method"}},{"locator":"dex_class:Lcom/musaed/test/clear/PremiumGate;","searchScope":"dex_string","hit":{"kind":"dex_string_matches","matchKind":"string","snippet":"isPremium","matchCount":1,"matchedStrings":[{"text":"isPremium","textStartOffset":0,"textTruncated":false}],"matchedStringsTruncated":false}}],"filterHint":{"code":"","message":""},"notSearchedTargets":["smali","native_symbols","native_strings","resource_table_file_paths"],"skippedScopes":[],"pagination":{"hasMore":false,"returnedCount":2,"limitMax":200}},"nextActions":[]},"isError":false}
+
+[5] خطوة 0 — محاولة 1 — 2026-11-15 22:12:03
+    الأداة: mt_apk_search
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"","target":"overview","query":"isPro","queryType":"literal","caseSensitive":false,"matchMode":"contains","prefix":"","includeMatchOffsets":false,"limit":50,"snippetMaxChars":240}
+    الحالة: ok — المدة: 86ms
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":true,\"data\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"hits\":[],\"filterHint\":{\"code\":\"\",\"message\":\"\"},\"notSearchedTargets\":[\"smali\",\"native_symbols\",\"native_strings\",\"resource_table_file_paths\"],\"skippedScopes\":[],\"pagination\":{\"hasMore\":false,\"nextCursor\":null,\"returnedCount\":0,\"limitMax\":200,\"totalAvailableCount\":null}},\"error\":null,\"nextActions\":[]}"}],"structuredContent":{"ok":true,"data":{"workspaceId":"qdsnpvgq","editSessionId":"","hits":[],"filterHint":{"code":"","message":""},"notSearchedTargets":["smali","native_symbols","native_strings","resource_table_file_paths"],"skippedScopes":[],"pagination":{"hasMore":false,"returnedCount":0,"limitMax":200}},"nextActions":[]},"isError":false}
+
+[6] خطوة 0 — محاولة 1 — 2026-11-15 22:12:03
+    الأداة: mt_apk_search
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"","target":"overview","query":"hasPremium","queryType":"literal","caseSensitive":false,"matchMode":"contains","prefix":"","includeMatchOffsets":false,"limit":50,"snippetMaxChars":240}
+    الحالة: ok — المدة: 88ms
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":true,\"data\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"hits\":[{\"locator\":\"dex_method:Lcom/musaed/test/clear/PremiumGate;-\u003ehasPremiumFeatures(Landroid/content/Context;)Z\",\"searchScope\":\"dex_method\",\"hit\":{\"kind\":\"dex_method_name\",\"matchKind\":\"method\",\"matchOffsets\":null}}],\"filterHint\":{\"code\":\"\",\"message\":\"\"},\"notSearchedTargets\":[\"smali\",\"native_symbols\",\"native_strings\",\"resource_table_file_paths\"],\"skippedScopes\":[],\"pagination\":{\"hasMore\":false,\"nextCursor\":null,\"returnedCount\":1,\"limitMax\":200,\"totalAvailableCount\":null}},\"error\":null,\"nextActions\":[]}"}],"structuredContent":{"ok":true,"data":{"workspaceId":"qdsnpvgq","editSessionId":"","hits":[{"locator":"dex_method:Lcom/musaed/test/clear/PremiumGate;-\u003ehasPremiumFeatures(Landroid/content/Context;)Z","searchScope":"dex_method","hit":{"kind":"dex_method_name","matchKind":"method"}}],"filterHint":{"code":"","message":""},"notSearchedTargets":["smali","native_symbols","native_strings","resource_table_file_paths"],"skippedScopes":[],"pagination":{"hasMore":false,"returnedCount":1,"limitMax":200}},"nextActions":[]},"isError":false}
+
+[7] خطوة 0 — محاولة 1 — 2026-11-15 22:12:03
+    الأداة: mt_apk_search
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"","target":"overview","query":"vip","queryType":"literal","caseSensitive":false,"matchMode":"contains","prefix":"","includeMatchOffsets":false,"limit":50,"snippetMaxChars":240}
+    الحالة: ok — المدة: 85ms
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":true,\"data\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"hits\":[],\"filterHint\":{\"code\":\"\",\"message\":\"\"},\"notSearchedTargets\":[\"smali\",\"native_symbols\",\"native_strings\",\"resource_table_file_paths\"],\"skippedScopes\":[],\"pagination\":{\"hasMore\":false,\"nextCursor\":null,\"returnedCount\":0,\"limitMax\":200,\"totalAvailableCount\":null}},\"error\":null,\"nextActions\":[]}"}],"structuredContent":{"ok":true,"data":{"workspaceId":"qdsnpvgq","editSessionId":"","hits":[],"filterHint":{"code":"","message":""},"notSearchedTargets":["smali","native_symbols","native_strings","resource_table_file_paths"],"skippedScopes":[],"pagination":{"hasMore":false,"returnedCount":0,"limitMax":200}},"nextActions":[]},"isError":false}
+
+[8] خطوة 0 — محاولة 1 — 2026-11-15 22:12:03
+    الأداة: mt_apk_search
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"","target":"overview","query":"subscri","queryType":"literal","caseSensitive":false,"matchMode":"contains","prefix":"","includeMatchOffsets":false,"limit":50,"snippetMaxChars":240}
+    الحالة: ok — المدة: 87ms
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":true,\"data\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"hits\":[],\"filterHint\":{\"code\":\"\",\"message\":\"\"},\"notSearchedTargets\":[\"smali\",\"native_symbols\",\"native_strings\",\"resource_table_file_paths\"],\"skippedScopes\":[],\"pagination\":{\"hasMore\":false,\"nextCursor\":null,\"returnedCount\":0,\"limitMax\":200,\"totalAvailableCount\":null}},\"error\":null,\"nextActions\":[]}"}],"structuredContent":{"ok":true,"data":{"workspaceId":"qdsnpvgq","editSessionId":"","hits":[],"filterHint":{"code":"","message":""},"notSearchedTargets":["smali","native_symbols","native_strings","resource_table_file_paths"],"skippedScopes":[],"pagination":{"hasMore":false,"returnedCount":0,"limitMax":200}},"nextActions":[]},"isError":false}
+
+[9] خطوة 0 — محاولة 1 — 2026-11-15 22:12:03
+    الأداة: mt_apk_search
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"","target":"overview","query":"billing","queryType":"literal","caseSensitive":false,"matchMode":"contains","prefix":"","includeMatchOffsets":false,"limit":50,"snippetMaxChars":240}
+    الحالة: ok — المدة: 89ms
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":true,\"data\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"hits\":[],\"filterHint\":{\"code\":\"\",\"message\":\"\"},\"notSearchedTargets\":[\"smali\",\"native_symbols\",\"native_strings\",\"resource_table_file_paths\"],\"skippedScopes\":[],\"pagination\":{\"hasMore\":false,\"nextCursor\":null,\"returnedCount\":0,\"limitMax\":200,\"totalAvailableCount\":null}},\"error\":null,\"nextActions\":[]}"}],"structuredContent":{"ok":true,"data":{"workspaceId":"qdsnpvgq","editSessionId":"","hits":[],"filterHint":{"code":"","message":""},"notSearchedTargets":["smali","native_symbols","native_strings","resource_table_file_paths"],"skippedScopes":[],"pagination":{"hasMore":false,"returnedCount":0,"limitMax":200}},"nextActions":[]},"isError":false}
+
+[10] خطوة 0 — محاولة 1 — 2026-11-15 22:12:03
+    الأداة: mt_apk_search
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"","target":"overview","query":"purchase","queryType":"literal","caseSensitive":false,"matchMode":"contains","prefix":"","includeMatchOffsets":false,"limit":50,"snippetMaxChars":240}
+    الحالة: ok — المدة: 88ms
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":true,\"data\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"hits\":[],\"filterHint\":{\"code\":\"\",\"message\":\"\"},\"notSearchedTargets\":[\"smali\",\"native_symbols\",\"native_strings\",\"resource_table_file_paths\"],\"skippedScopes\":[],\"pagination\":{\"hasMore\":false,\"nextCursor\":null,\"returnedCount\":0,\"limitMax\":200,\"totalAvailableCount\":null}},\"error\":null,\"nextActions\":[]}"}],"structuredContent":{"ok":true,"data":{"workspaceId":"qdsnpvgq","editSessionId":"","hits":[],"filterHint":{"code":"","message":""},"notSearchedTargets":["smali","native_symbols","native_strings","resource_table_file_paths"],"skippedScopes":[],"pagination":{"hasMore":false,"returnedCount":0,"limitMax":200}},"nextActions":[]},"isError":false}
+
+[11] خطوة 0 — محاولة 1 — 2026-11-15 22:12:03
+    الأداة: mt_apk_search
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"","target":"overview","query":"entitlement","queryType":"literal","caseSensitive":false,"matchMode":"contains","prefix":"","includeMatchOffsets":false,"limit":50,"snippetMaxChars":240}
+    الحالة: ok — المدة: 85ms
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":true,\"data\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"hits\":[],\"filterHint\":{\"code\":\"\",\"message\":\"\"},\"notSearchedTargets\":[\"smali\",\"native_symbols\",\"native_strings\",\"resource_table_file_paths\"],\"skippedScopes\":[],\"pagination\":{\"hasMore\":false,\"nextCursor\":null,\"returnedCount\":0,\"limitMax\":200,\"totalAvailableCount\":null}},\"error\":null,\"nextActions\":[]}"}],"structuredContent":{"ok":true,"data":{"workspaceId":"qdsnpvgq","editSessionId":"","hits":[],"filterHint":{"code":"","message":""},"notSearchedTargets":["smali","native_symbols","native_strings","resource_table_file_paths"],"skippedScopes":[],"pagination":{"hasMore":false,"returnedCount":0,"limitMax":200}},"nextActions":[]},"isError":false}
+
+[12] خطوة 0 — محاولة 1 — 2026-11-15 22:12:04
+    الأداة: mt_apk_search
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"","target":"dex_names","query":"BillingClient","queryType":"literal","caseSensitive":false,"matchMode":"contains","prefix":"","includeMatchOffsets":false,"limit":50,"snippetMaxChars":240}
+    الحالة: ok — المدة: 82ms
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":true,\"data\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"hits\":[],\"filterHint\":{\"code\":\"\",\"message\":\"\"},\"notSearchedTargets\":[],\"skippedScopes\":[],\"pagination\":{\"hasMore\":false,\"nextCursor\":null,\"returnedCount\":0,\"limitMax\":200,\"totalAvailableCount\":null}},\"error\":null,\"nextActions\":[]}"}],"structuredContent":{"ok":true,"data":{"workspaceId":"qdsnpvgq","editSessionId":"","hits":[],"filterHint":{"code":"","message":""},"notSearchedTargets":[],"skippedScopes":[],"pagination":{"hasMore":false,"returnedCount":0,"limitMax":200}},"nextActions":[]},"isError":false}
+
+[13] خطوة 0 — محاولة 1 — 2026-11-15 22:12:04
+    الأداة: mt_apk_search
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"","target":"dex_names","query":"RevenueCat","queryType":"literal","caseSensitive":false,"matchMode":"contains","prefix":"","includeMatchOffsets":false,"limit":50,"snippetMaxChars":240}
+    الحالة: ok — المدة: 83ms
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":true,\"data\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"hits\":[],\"filterHint\":{\"code\":\"\",\"message\":\"\"},\"notSearchedTargets\":[],\"skippedScopes\":[],\"pagination\":{\"hasMore\":false,\"nextCursor\":null,\"returnedCount\":0,\"limitMax\":200,\"totalAvailableCount\":null}},\"error\":null,\"nextActions\":[]}"}],"structuredContent":{"ok":true,"data":{"workspaceId":"qdsnpvgq","editSessionId":"","hits":[],"filterHint":{"code":"","message":""},"notSearchedTargets":[],"skippedScopes":[],"pagination":{"hasMore":false,"returnedCount":0,"limitMax":200}},"nextActions":[]},"isError":false}
+
+[14] خطوة 0 — محاولة 1 — 2026-11-15 22:12:04
+    الأداة: mt_apk_search
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"","target":"dex_names","query":"Adapty","queryType":"literal","caseSensitive":false,"matchMode":"contains","prefix":"","includeMatchOffsets":false,"limit":50,"snippetMaxChars":240}
+    الحالة: ok — المدة: 82ms
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":true,\"data\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"hits\":[],\"filterHint\":{\"code\":\"\",\"message\":\"\"},\"notSearchedTargets\":[],\"skippedScopes\":[],\"pagination\":{\"hasMore\":false,\"nextCursor\":null,\"returnedCount\":0,\"limitMax\":200,\"totalAvailableCount\":null}},\"error\":null,\"nextActions\":[]}"}],"structuredContent":{"ok":true,"data":{"workspaceId":"qdsnpvgq","editSessionId":"","hits":[],"filterHint":{"code":"","message":""},"notSearchedTargets":[],"skippedScopes":[],"pagination":{"hasMore":false,"returnedCount":0,"limitMax":200}},"nextActions":[]},"isError":false}
+
+[15] خطوة 0 — محاولة 1 — 2026-11-15 22:12:04
+    الأداة: mt_apk_search
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"","target":"dex_names","query":"Qonversion","queryType":"literal","caseSensitive":false,"matchMode":"contains","prefix":"","includeMatchOffsets":false,"limit":50,"snippetMaxChars":240}
+    الحالة: ok — المدة: 86ms
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":true,\"data\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"hits\":[],\"filterHint\":{\"code\":\"\",\"message\":\"\"},\"notSearchedTargets\":[],\"skippedScopes\":[],\"pagination\":{\"hasMore\":false,\"nextCursor\":null,\"returnedCount\":0,\"limitMax\":200,\"totalAvailableCount\":null}},\"error\":null,\"nextActions\":[]}"}],"structuredContent":{"ok":true,"data":{"workspaceId":"qdsnpvgq","editSessionId":"","hits":[],"filterHint":{"code":"","message":""},"notSearchedTargets":[],"skippedScopes":[],"pagination":{"hasMore":false,"returnedCount":0,"limitMax":200}},"nextActions":[]},"isError":false}
+
+[16] خطوة 0 — محاولة 1 — 2026-11-15 22:12:04
+    الأداة: mt_apk_search
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"","target":"dex_names","query":"Superwall","queryType":"literal","caseSensitive":false,"matchMode":"contains","prefix":"","includeMatchOffsets":false,"limit":50,"snippetMaxChars":240}
+    الحالة: ok — المدة: 86ms
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":true,\"data\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"hits\":[],\"filterHint\":{\"code\":\"\",\"message\":\"\"},\"notSearchedTargets\":[],\"skippedScopes\":[],\"pagination\":{\"hasMore\":false,\"nextCursor\":null,\"returnedCount\":0,\"limitMax\":200,\"totalAvailableCount\":null}},\"error\":null,\"nextActions\":[]}"}],"structuredContent":{"ok":true,"data":{"workspaceId":"qdsnpvgq","editSessionId":"","hits":[],"filterHint":{"code":"","message":""},"notSearchedTargets":[],"skippedScopes":[],"pagination":{"hasMore":false,"returnedCount":0,"limitMax":200}},"nextActions":[]},"isError":false}
+
+[17] خطوة 0 — محاولة 1 — 2026-11-15 22:12:04
+    الأداة: mt_apk_dex_list_classes
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"","prefix":"","limit":200}
+    الحالة: ok — المدة: 58ms
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":true,\"data\":{\"workspaceId\":\"qdsnpvgq\",\"editSessionId\":\"\",\"items\":[{\"locator\":\"dex_class:Lcom/musaed/test/clear/MainActivity;\",\"javaName\":\"com.musaed.test.clear.MainActivity\",\"fieldCount\":1,\"methodCount\":3},{\"locator\":\"dex_class:Lcom/musaed/test/clear/MainActivity$1;\",\"javaName\":\"com.musaed.test.clear.MainActivity$1\",\"fieldCount\":1,\"methodCount\":2},{\"locator\":\"dex_class:Lcom/musaed/test/clear/PremiumGate;\",\"javaName\":\"com.musaed.test.clear.PremiumGate\",\"fieldCount\":0,\"methodCount\":3}],\"pagination\":{\"hasMore\":false,\"nextCursor\":null,\"returnedCount\":3,\"limitMax\":1000,\"totalAvailableCount\":3}},\"error\":null,\"nextActions\":[]}"}],"structuredContent":{"ok":true,"data":{"workspaceId":"qdsnpvgq","editSessionId":"","items":[{"locator":"dex_class:Lcom/musaed/test/clear/MainActivity;","javaName":"com.musaed.test.clear.MainActivity","fieldCount":1,"methodCount":3},{"locator":"dex_class:Lcom/musaed/test/clear/MainActivity$1;","javaName":"com.musaed.test.clear.MainActivity$1","fieldCount":1,"methodCount":2},{"locator":"dex_class:Lcom/musaed/test/clear/PremiumGate;","javaName":"com.musaed.test.clear.PremiumGate","fieldCount":0,"methodCount":3}],"pagination":{"hasMore":false,"returnedCount":3,"limitMax":1000,"totalAvailableCount":3}},"nextActions":[]},"isError":false}
+
+[18] خطوة 1 — محاولة 1 — 2026-11-15 22:12:32
+    الأداة: mt_apk_dex_search_string
+    المعاملات: {"query":"isPremium"}
+    الحالة: error — المدة: 19ms
+    الخطأ: MCP error -32602 for tools/call: Unknown tool
+    النتيجة الخام:
+
+
+[19] خطوة 1 — محاولة 2 — 2026-11-15 22:12:32
+    الأداة: mt_apk_dex_search_string
+    المعاملات: {"query":"isPremium"}
+    الحالة: error — المدة: 46ms
+    الخطأ: MCP error -32602 for tools/call: Unknown tool
+    النتيجة الخام:
+
+
+[20] خطوة 4 — محاولة 1 — 2026-11-15 22:16:17
+    الأداة: mt_apk_dex_list_classes
+    المعاملات: {"package":"com.musaed.test.clear"}
+    الحالة: error — المدة: 20ms
+    الخطأ: الأداة mt_apk_dex_list_classes أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid mt_apk_dex_list_classes argument\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"package\",\"badValue\":\"com.musaed.test.clear\",\"badValueType\":\"string\",\"allowedValues\":[\"workspaceId\",\"editSessionId\",\"prefix\",\"limit\"],\"example\":\"{}\",\"diagnostics\":null},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid mt_apk_dex_list_classes argument","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"package","badValue":"com.musaed.test.clear","badValueType":"string","allowedValues":["workspaceId","editSessionId","prefix","limit"],"example":"{}"},"nextActions":[]},"isError":true}
+
+[21] خطوة 5 — محاولة 1 — 2026-11-15 22:16:19
+    الأداة: mt_apk_dex_list_classes
+    المعاملات: {}
+    الحالة: error — المدة: 12ms
+    الخطأ: الأداة mt_apk_dex_list_classes أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Missing parameters: workspaceId, editSessionId, prefix, limit\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"parameters\",\"badValue\":null,\"badValueType\":null,\"allowedValues\":[\"workspaceId\",\"editSessionId\",\"prefix\",\"limit\"],\"example\":\"{}\",\"diagnostics\":null},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Missing parameters: workspaceId, editSessionId, prefix, limit","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"parameters","allowedValues":["workspaceId","editSessionId","prefix","limit"],"example":"{}"},"nextActions":[]},"isError":true}
+
+[22] خطوة 6 — محاولة 1 — 2026-11-15 22:16:22
+    الأداة: mt_apk_dex_list_classes
+    المعاملات: {"workspaceId":"qdsnpvgq","prefix":"com.musaed.test.clear","limit":100}
+    الحالة: error — المدة: 22ms
+    الخطأ: الأداة mt_apk_dex_list_classes أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Missing editSessionId\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"editSessionId\",\"badValue\":null,\"badValueType\":null,\"allowedValues\":[],\"example\":\"{}\",\"diagnostics\":null},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Missing editSessionId","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"editSessionId","allowedValues":[],"example":"{}"},"nextActions":[]},"isError":true}
+
+[23] خطوة 7 — محاولة 1 — 2026-11-15 22:16:25
+    الأداة: mt_apk_dex_list_classes
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"main","prefix":"com.musaed.test.clear","limit":100}
+    الحالة: error — المدة: 18ms
+    الخطأ: الأداة mt_apk_dex_list_classes أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid editSessionId\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"editSessionId\",\"badValue\":\"main\",\"badValueType\":\"string\",\"allowedValues\":[],\"example\":\"{\\\"editSessionId\\\":\\\"ab12cd34\\\"}\",\"diagnostics\":null},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid editSessionId","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"editSessionId","badValue":"main","badValueType":"string","allowedValues":[],"example":"{\"editSessionId\":\"ab12cd34\"}"},"nextActions":[]},"isError":true}
+
+[24] خطوة 8 — محاولة 1 — 2026-11-15 22:16:27
+    الأداة: mt_apk_list
+    المعاملات: {"workspaceId":"qdsnpvgq"}
+    الحالة: error — المدة: 12ms
+    الخطأ: MCP error -32602 for tools/call: Unknown tool
+    النتيجة الخام:
+
+
+[25] خطوة 8 — محاولة 2 — 2026-11-15 22:16:27
+    الأداة: mt_apk_list
+    المعاملات: {"workspaceId":"qdsnpvgq"}
+    الحالة: error — المدة: 51ms
+    الخطأ: MCP error -32602 for tools/call: Unknown tool
+    النتيجة الخام:
+
+
+[26] خطوة 9 — محاولة 1 — 2026-11-15 22:16:30
+    الأداة: mt_apk_read_text
+    المعاملات: {"workspaceId":"qdsnpvgq","path":"AndroidManifest.xml"}
+    الحالة: error — المدة: 12ms
+    الخطأ: الأداة mt_apk_read_text أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid read_text argument\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"path\",\"badValue\":\"AndroidManifest.xml\",\"badValueType\":\"string\",\"allowedValues\":[\"workspaceId\",\"editSessionId\",\"locator\",\"limit\",\"maxChars\",\"startLine\",\"startColumn\"],\"example\":\"{}\",\"diagnostics\":{\"suggestedLocator\":null}},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid read_text argument","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"path","badValue":"AndroidManifest.xml","badValueType":"string","allowedValues":["workspaceId","editSessionId","locator","limit","maxChars","startLine","startColumn"],"example":"{}","diagnostics":{}},"nextActions":[]},"isError":true}
+
+[27] خطوة 10 — محاولة 1 — 2026-11-15 22:16:35
+    الأداة: mt_apk_read_text
+    المعاملات: {"workspaceId":"qdsnpvgq","path":"smali/androidmanifest.xml"}
+    الحالة: error — المدة: 15ms
+    الخطأ: الأداة mt_apk_read_text أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid read_text argument\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"path\",\"badValue\":\"smali/androidmanifest.xml\",\"badValueType\":\"string\",\"allowedValues\":[\"workspaceId\",\"editSessionId\",\"locator\",\"limit\",\"maxChars\",\"startLine\",\"startColumn\"],\"example\":\"{}\",\"diagnostics\":{\"suggestedLocator\":null}},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid read_text argument","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"path","badValue":"smali/androidmanifest.xml","badValueType":"string","allowedValues":["workspaceId","editSessionId","locator","limit","maxChars","startLine","startColumn"],"example":"{}","diagnostics":{}},"nextActions":[]},"isError":true}
+
+[28] خطوة 11 — محاولة 1 — 2026-11-15 22:16:39
+    الأداة: mt_apk_read_text
+    المعاملات: {"workspaceId":"qdsnpvgq"}
+    الحالة: error — المدة: 13ms
+    الخطأ: الأداة mt_apk_read_text أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Missing parameters: editSessionId, locator\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"parameters\",\"badValue\":null,\"badValueType\":null,\"allowedValues\":[\"editSessionId\",\"locator\"],\"example\":\"{}\",\"diagnostics\":{\"suggestedLocator\":null}},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Missing parameters: editSessionId, locator","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"parameters","allowedValues":["editSessionId","locator"],"example":"{}","diagnostics":{}},"nextActions":[]},"isError":true}
+
+[29] خطوة 12 — محاولة 1 — 2026-11-15 22:16:43
+    الأداة: mt_apk_read_text
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"main","locator":"AndroidManifest.xml"}
+    الحالة: error — المدة: 21ms
+    الخطأ: الأداة mt_apk_read_text أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid locator\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"locator\",\"badValue\":\"AndroidManifest.xml\",\"badValueType\":\"string\",\"allowedValues\":[],\"example\":\"{\\\"locator\\\":\\\"zip_entry:AndroidManifest.xml\\\"}\",\"diagnostics\":{\"suggestedLocator\":null}},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid locator","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"locator","badValue":"AndroidManifest.xml","badValueType":"string","allowedValues":[],"example":"{\"locator\":\"zip_entry:AndroidManifest.xml\"}","diagnostics":{}},"nextActions":[]},"isError":true}
+
+[30] خطوة 14 — محاولة 1 — 2026-11-15 22:18:44
+    الأداة: mt_apk_dex_read_pseudocode
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"main","class":"com.musaed.test.clear.MainActivity"}
+    الحالة: error — المدة: 30ms
+    الخطأ: الأداة mt_apk_dex_read_pseudocode أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid Java pseudocode style\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"style\",\"badValue\":null,\"badValueType\":null,\"allowedValues\":[\"readable\",\"instruction\"],\"example\":\"{\\\"style\\\":\\\"readable\\\"}\",\"diagnostics\":{}},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid Java pseudocode style","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"style","allowedValues":["readable","instruction"],"example":"{\"style\":\"readable\"}","diagnostics":{}},"nextActions":[]},"isError":true}
+
+[31] خطوة 15 — محاولة 1 — 2026-11-15 22:19:12
+    الأداة: mt_apk_dex_read_pseudocode
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"main","class":"com.musaed.test.clear.MainActivity","style":"readable"}
+    الحالة: error — المدة: 21ms
+    الخطأ: الأداة mt_apk_dex_read_pseudocode أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid read_text argument\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"class\",\"badValue\":\"com.musaed.test.clear.MainActivity\",\"badValueType\":\"string\",\"allowedValues\":[\"workspaceId\",\"editSessionId\",\"locator\",\"limit\",\"maxChars\",\"startLine\",\"startColumn\"],\"example\":\"{}\",\"diagnostics\":{}},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid read_text argument","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"class","badValue":"com.musaed.test.clear.MainActivity","badValueType":"string","allowedValues":["workspaceId","editSessionId","locator","limit","maxChars","startLine","startColumn"],"example":"{}","diagnostics":{}},"nextActions":[]},"isError":true}
+
+[32] خطوة 16 — محاولة 1 — 2026-11-15 22:19:40
+    الأداة: mt_apk_list_tools
+    المعاملات: {}
+    الحالة: error — المدة: 17ms
+    الخطأ: MCP error -32602 for tools/call: Unknown tool
+    النتيجة الخام:
+
+
+[33] خطوة 16 — محاولة 2 — 2026-11-15 22:19:40
+    الأداة: mt_apk_list_tools
+    المعاملات: {}
+    الحالة: error — المدة: 48ms
+    الخطأ: MCP error -32602 for tools/call: Unknown tool
+    النتيجة الخام:
+
+
+[34] خطوة 17 — محاولة 1 — 2026-11-15 22:19:48
+    الأداة: mt_apk_dex_search
+    المعاملات: {"workspaceId":"qdsnpvgq","query":"premium"}
+    الحالة: error — المدة: 11ms
+    الخطأ: MCP error -32602 for tools/call: Unknown tool
+    النتيجة الخام:
+
+
+[35] خطوة 17 — محاولة 2 — 2026-11-15 22:19:48
+    الأداة: mt_apk_dex_search
+    المعاملات: {"workspaceId":"qdsnpvgq","query":"premium"}
+    الحالة: error — المدة: 47ms
+    الخطأ: MCP error -32602 for tools/call: Unknown tool
+    النتيجة الخام:
+
+
+[36] خطوة 18 — محاولة 1 — 2026-11-15 22:19:50
+    الأداة: mt_apk_dex_search
+    المعاملات: {"workspaceId":"qdsnpvgq"}
+    الحالة: error — المدة: 6ms
+    الخطأ: MCP error -32602 for tools/call: Unknown tool
+    النتيجة الخام:
+
+
+[37] خطوة 18 — محاولة 2 — 2026-11-15 22:19:50
+    الأداة: mt_apk_dex_search
+    المعاملات: {"workspaceId":"qdsnpvgq"}
+    الحالة: error — المدة: 48ms
+    الخطأ: MCP error -32602 for tools/call: Unknown tool
+    النتيجة الخام:
+
+
+[38] خطوة 20 — محاولة 1 — 2026-11-15 22:22:10
+    الأداة: mt_apk_dex_read_pseudocode
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"main","class":"Lcom/musaed/test/clear/MainActivity;","style":"readable"}
+    الحالة: error — المدة: 14ms
+    الخطأ: الأداة mt_apk_dex_read_pseudocode أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid read_text argument\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"class\",\"badValue\":\"Lcom/musaed/test/clear/MainActivity;\",\"badValueType\":\"string\",\"allowedValues\":[\"workspaceId\",\"editSessionId\",\"locator\",\"limit\",\"maxChars\",\"startLine\",\"startColumn\"],\"example\":\"{}\",\"diagnostics\":{}},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid read_text argument","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"class","badValue":"Lcom/musaed/test/clear/MainActivity;","badValueType":"string","allowedValues":["workspaceId","editSessionId","locator","limit","maxChars","startLine","startColumn"],"example":"{}","diagnostics":{}},"nextActions":[]},"isError":true}
+
+[39] خطوة 22 — محاولة 1 — 2026-11-15 22:24:04
+    الأداة: mt_apk_read_smali
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"main","class":"com.musaed.test.clear.MainActivity"}
+    الحالة: error — المدة: 14ms
+    الخطأ: MCP error -32602 for tools/call: Unknown tool
+    النتيجة الخام:
+
+
+[40] خطوة 22 — محاولة 2 — 2026-11-15 22:24:04
+    الأداة: mt_apk_read_smali
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"main","class":"com.musaed.test.clear.MainActivity"}
+    الحالة: error — المدة: 47ms
+    الخطأ: MCP error -32602 for tools/call: Unknown tool
+    النتيجة الخام:
+
+
+[41] خطوة 23 — محاولة 1 — 2026-11-15 22:24:08
+    الأداة: mt_apk_dex_list_classes
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"0","prefix":"com.musaed.test.clear","limit":100}
+    الحالة: error — المدة: 23ms
+    الخطأ: الأداة mt_apk_dex_list_classes أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid editSessionId\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"editSessionId\",\"badValue\":\"0\",\"badValueType\":\"string\",\"allowedValues\":[],\"example\":\"{\\\"editSessionId\\\":\\\"ab12cd34\\\"}\",\"diagnostics\":null},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid editSessionId","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"editSessionId","badValue":"0","badValueType":"string","allowedValues":[],"example":"{\"editSessionId\":\"ab12cd34\"}"},"nextActions":[]},"isError":true}
+
+[42] خطوة 24 — محاولة 1 — 2026-11-15 22:24:10
+    الأداة: mt_apk_dex_list_classes
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"session_1","prefix":"com.musaed.test.clear","limit":100}
+    الحالة: error — المدة: 15ms
+    الخطأ: الأداة mt_apk_dex_list_classes أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid editSessionId\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"editSessionId\",\"badValue\":\"session_1\",\"badValueType\":\"string\",\"allowedValues\":[],\"example\":\"{\\\"editSessionId\\\":\\\"ab12cd34\\\"}\",\"diagnostics\":null},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid editSessionId","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"editSessionId","badValue":"session_1","badValueType":"string","allowedValues":[],"example":"{\"editSessionId\":\"ab12cd34\"}"},"nextActions":[]},"isError":true}
+
+[43] خطوة 25 — محاولة 1 — 2026-11-15 22:24:13
+    الأداة: mt_apk_dex_list_classes
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":1,"prefix":"com.musaed.test.clear","limit":100}
+    الحالة: error — المدة: 19ms
+    الخطأ: الأداة mt_apk_dex_list_classes أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid editSessionId\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"editSessionId\",\"badValue\":\"1\",\"badValueType\":\"number\",\"allowedValues\":[],\"example\":\"{}\",\"diagnostics\":null},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid editSessionId","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"editSessionId","badValue":"1","badValueType":"number","allowedValues":[],"example":"{}"},"nextActions":[]},"isError":true}
+
+[44] خطوة 26 — محاولة 1 — 2026-11-15 22:24:17
+    الأداة: mt_apk_dex_read_pseudocode
+    المعاملات: {"workspaceId":"qdsnpvgq","class":"com.musaed.test.clear.MainActivity"}
+    الحالة: error — المدة: 10ms
+    الخطأ: الأداة mt_apk_dex_read_pseudocode أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid Java pseudocode style\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"style\",\"badValue\":null,\"badValueType\":null,\"allowedValues\":[\"readable\",\"instruction\"],\"example\":\"{\\\"style\\\":\\\"readable\\\"}\",\"diagnostics\":{}},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid Java pseudocode style","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"style","allowedValues":["readable","instruction"],"example":"{\"style\":\"readable\"}","diagnostics":{}},"nextActions":[]},"isError":true}
+
+[45] خطوة 28 — محاولة 1 — 2026-11-15 22:26:23
+    الأداة: mt_apk_dex_read_pseudocode
+    المعاملات: {"workspaceId":"qdsnpvgq","class":"com.musaed.test.clear.MainActivity","style":"readable"}
+    الحالة: error — المدة: 14ms
+    الخطأ: الأداة mt_apk_dex_read_pseudocode أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid read_text argument\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"class\",\"badValue\":\"com.musaed.test.clear.MainActivity\",\"badValueType\":\"string\",\"allowedValues\":[\"workspaceId\",\"editSessionId\",\"locator\",\"limit\",\"maxChars\",\"startLine\",\"startColumn\"],\"example\":\"{}\",\"diagnostics\":{}},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid read_text argument","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"class","badValue":"com.musaed.test.clear.MainActivity","badValueType":"string","allowedValues":["workspaceId","editSessionId","locator","limit","maxChars","startLine","startColumn"],"example":"{}","diagnostics":{}},"nextActions":[]},"isError":true}
+
+[46] خطوة 29 — محاولة 1 — 2026-11-15 22:26:37
+    الأداة: mt_apk_dex_read_pseudocode
+    المعاملات: {"workspaceId":"qdsnpvgq","class":"com/musaed/test/clear/MainActivity","style":"readable"}
+    الحالة: error — المدة: 12ms
+    الخطأ: الأداة mt_apk_dex_read_pseudocode أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid read_text argument\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"class\",\"badValue\":\"com/musaed/test/clear/MainActivity\",\"badValueType\":\"string\",\"allowedValues\":[\"workspaceId\",\"editSessionId\",\"locator\",\"limit\",\"maxChars\",\"startLine\",\"startColumn\"],\"example\":\"{}\",\"diagnostics\":{}},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid read_text argument","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"class","badValue":"com/musaed/test/clear/MainActivity","badValueType":"string","allowedValues":["workspaceId","editSessionId","locator","limit","maxChars","startLine","startColumn"],"example":"{}","diagnostics":{}},"nextActions":[]},"isError":true}
+
+[47] خطوة 30 — محاولة 1 — 2026-11-15 22:26:41
+    الأداة: mt_apk_dex_read_pseudocode
+    المعاملات: {"workspaceId":"qdsnpvgq","locator":"com.musaed.test.clear.MainActivity","style":"readable"}
+    الحالة: error — المدة: 10ms
+    الخطأ: الأداة mt_apk_dex_read_pseudocode أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Missing editSessionId\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"editSessionId\",\"badValue\":null,\"badValueType\":null,\"allowedValues\":[],\"example\":\"{}\",\"diagnostics\":{}},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Missing editSessionId","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"editSessionId","allowedValues":[],"example":"{}","diagnostics":{}},"nextActions":[]},"isError":true}
+
+[48] خطوة 32 — محاولة 1 — 2026-11-15 22:28:37
+    الأداة: mt_apk_dex_read_pseudocode
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"default","locator":"com.musaed.test.clear.MainActivity","style":"readable"}
+    الحالة: error — المدة: 34ms
+    الخطأ: الأداة mt_apk_dex_read_pseudocode أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid locator\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"locator\",\"badValue\":\"com.musaed.test.clear.MainActivity\",\"badValueType\":\"string\",\"allowedValues\":[],\"example\":\"{\\\"locator\\\":\\\"zip_entry:AndroidManifest.xml\\\"}\",\"diagnostics\":{}},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid locator","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"locator","badValue":"com.musaed.test.clear.MainActivity","badValueType":"string","allowedValues":[],"example":"{\"locator\":\"zip_entry:AndroidManifest.xml\"}","diagnostics":{}},"nextActions":[]},"isError":true}
+
+[49] خطوة 33 — محاولة 1 — 2026-11-15 22:28:42
+    الأداة: mt_apk_read_smali
+    المعاملات: {"workspaceId":"qdsnpvgq","locator":"MainActivity"}
+    الحالة: error — المدة: 11ms
+    الخطأ: MCP error -32602 for tools/call: Unknown tool
+    النتيجة الخام:
+
+
+[50] خطوة 33 — محاولة 2 — 2026-11-15 22:28:42
+    الأداة: mt_apk_read_smali
+    المعاملات: {"workspaceId":"qdsnpvgq","locator":"MainActivity"}
+    الحالة: error — المدة: 50ms
+    الخطأ: MCP error -32602 for tools/call: Unknown tool
+    النتيجة الخام:
+
+
+[51] خطوة 34 — محاولة 1 — 2026-11-15 22:28:46
+    الأداة: mt_apk_read_smali
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"default","locator":"MainActivity"}
+    الحالة: error — المدة: 5ms
+    الخطأ: MCP error -32602 for tools/call: Unknown tool
+    النتيجة الخام:
+
+
+[52] خطوة 34 — محاولة 2 — 2026-11-15 22:28:46
+    الأداة: mt_apk_read_smali
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"default","locator":"MainActivity"}
+    الحالة: error — المدة: 51ms
+    الخطأ: MCP error -32602 for tools/call: Unknown tool
+    النتيجة الخام:
+
+
+[53] خطوة 35 — محاولة 1 — 2026-11-15 22:28:49
+    الأداة: mt_apk_dex_search
+    المعاملات: {"workspaceId":"qdsnpvgq","query":"premium","editSessionId":"default"}
+    الحالة: error — المدة: 14ms
+    الخطأ: MCP error -32602 for tools/call: Unknown tool
+    النتيجة الخام:
+
+
+[54] خطوة 35 — محاولة 2 — 2026-11-15 22:28:49
+    الأداة: mt_apk_dex_search
+    المعاملات: {"workspaceId":"qdsnpvgq","query":"premium","editSessionId":"default"}
+    الحالة: error — المدة: 48ms
+    الخطأ: MCP error -32602 for tools/call: Unknown tool
+    النتيجة الخام:
+
+
+[55] خطوة 36 — محاولة 1 — 2026-11-15 22:28:53
+    الأداة: mt_apk_dex_list_classes
+    المعاملات: {"workspaceId":"qdsnpvgq"}
+    الحالة: error — المدة: 20ms
+    الخطأ: الأداة mt_apk_dex_list_classes أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Missing parameters: editSessionId, prefix, limit\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"parameters\",\"badValue\":null,\"badValueType\":null,\"allowedValues\":[\"editSessionId\",\"prefix\",\"limit\"],\"example\":\"{}\",\"diagnostics\":null},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Missing parameters: editSessionId, prefix, limit","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"parameters","allowedValues":["editSessionId","prefix","limit"],"example":"{}"},"nextActions":[]},"isError":true}
+
+[56] خطوة 37 — محاولة 1 — 2026-11-15 22:28:56
+    الأداة: mt_apk_dex_list_classes
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"default","prefix":"com.musaed.test.clear","limit":100}
+    الحالة: error — المدة: 23ms
+    الخطأ: الأداة mt_apk_dex_list_classes أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid editSessionId\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"editSessionId\",\"badValue\":\"default\",\"badValueType\":\"string\",\"allowedValues\":[],\"example\":\"{\\\"editSessionId\\\":\\\"ab12cd34\\\"}\",\"diagnostics\":null},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid editSessionId","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"editSessionId","badValue":"default","badValueType":"string","allowedValues":[],"example":"{\"editSessionId\":\"ab12cd34\"}"},"nextActions":[]},"isError":true}
+
+[57] خطوة 38 — محاولة 1 — 2026-11-15 22:29:00
+    الأداة: mt_apk_dex_list_classes
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"active","prefix":"com.musaed.test.clear","limit":100}
+    الحالة: error — المدة: 12ms
+    الخطأ: الأداة mt_apk_dex_list_classes أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid editSessionId\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"editSessionId\",\"badValue\":\"active\",\"badValueType\":\"string\",\"allowedValues\":[],\"example\":\"{\\\"editSessionId\\\":\\\"ab12cd34\\\"}\",\"diagnostics\":null},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid editSessionId","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"editSessionId","badValue":"active","badValueType":"string","allowedValues":[],"example":"{\"editSessionId\":\"ab12cd34\"}"},"nextActions":[]},"isError":true}
+
+[58] خطوة 39 — محاولة 1 — 2026-11-15 22:29:19
+    الأداة: mt_apk_dex_list_classes
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":"current","prefix":"","limit":10}
+    الحالة: error — المدة: 14ms
+    الخطأ: الأداة mt_apk_dex_list_classes أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid editSessionId\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"editSessionId\",\"badValue\":\"current\",\"badValueType\":\"string\",\"allowedValues\":[],\"example\":\"{\\\"editSessionId\\\":\\\"ab12cd34\\\"}\",\"diagnostics\":null},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid editSessionId","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"editSessionId","badValue":"current","badValueType":"string","allowedValues":[],"example":"{\"editSessionId\":\"ab12cd34\"}"},"nextActions":[]},"isError":true}
+
+[59] خطوة 40 — محاولة 1 — 2026-11-15 22:29:23
+    الأداة: mt_apk_dex_list_classes
+    المعاملات: {"workspaceId":"qdsnpvgq","editSessionId":0,"prefix":"","limit":10}
+    الحالة: error — المدة: 10ms
+    الخطأ: الأداة mt_apk_dex_list_classes أعادت خطأ من الخادم
+    النتيجة الخام:
+{"content":[{"type":"text","text":"{\"ok\":false,\"data\":null,\"error\":{\"code\":\"INVALID_ARGUMENT\",\"message\":\"Invalid editSessionId\",\"severity\":\"warning\",\"recoverable\":true,\"retrySameArguments\":false,\"argument\":\"editSessionId\",\"badValue\":\"0\",\"badValueType\":\"number\",\"allowedValues\":[],\"example\":\"{}\",\"diagnostics\":null},\"nextActions\":[]}"}],"structuredContent":{"ok":false,"error":{"code":"INVALID_ARGUMENT","message":"Invalid editSessionId","severity":"warning","recoverable":true,"retrySameArguments":false,"argument":"editSessionId","badValue":"0","badValueType":"number","allowedValues":[],"example":"{}"},"nextActions":[]},"isError":true}
+

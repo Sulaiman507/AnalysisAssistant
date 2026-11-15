@@ -127,6 +127,56 @@ internal object McpResults {
     }
 
     /**
+     * يستخرج كائن خطأ الخادم {code, message, allowedValues, example} من
+     * نتيجة tools/call الخام: content[0].text بصيغة JSON وفيه
+     * {ok:false, error:{...}}. يعيد null إن لم يوجد خطأ منظم — عندها
+     * يُستخدم نص الاستثناء كما هو.
+     *
+     * السبب (دليل حي 2026-11-15): رسائل الخادم تحمل allowedValues وexample
+     * — التفصيل الذي يحتاجه النموذج ليصحّح معاملاته — لكن الاستثناء كان
+     * يقتطع الخام عند 300 حرف فيقطعها. الآن تُستخرج كاملة وتُرسل له.
+     */
+    fun serverErrorOf(rawResult: String?): JsonObject? {
+        if (rawResult.isNullOrBlank()) return null
+        return try {
+            val root = JsonParser.parseString(rawResult).asJsonObject
+            val content = if (root.has("content") && root.get("content").isJsonArray) {
+                root.getAsJsonArray("content")
+            } else {
+                return null
+            }
+            if (content.size() == 0) return null
+            val first = content.get(0)
+            if (!first.isJsonObject) return null
+            val textEl = first.asJsonObject.get("text") ?: return null
+            if (!textEl.isJsonPrimitive) return null
+            val parsed = JsonParser.parseString(textEl.asString).asJsonObject
+            if (parsed.has("error") && parsed.get("error").isJsonObject) {
+                parsed.getAsJsonObject("error")
+            } else {
+                null
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /** يصوغ خطأ الخادم رسالة تصحيح كاملة للنموذج: الرسالة + المسموح + مثال. */
+    fun serverErrorText(rawResult: String?): String? {
+        val err = serverErrorOf(rawResult) ?: return null
+        val parts = mutableListOf<String>()
+        firstString(err, "code")?.let { parts += "الكود: $it" }
+        firstString(err, "message")?.let { parts += it }
+        if (err.has("allowedValues") && err.get("allowedValues").isJsonArray) {
+            val allowed = err.getAsJsonArray("allowedValues")
+                .joinToString(", ") { it.asString }
+            parts += "المعاملات المسموحة: $allowed"
+        }
+        firstString(err, "example")?.let { parts += "مثال: $it" }
+        return parts.joinToString(" — ")
+    }
+
+    /**
      * عدد نتائج البحث: hits أولاً (هكذا يرجعها mt_apk_search حياً: مصفوفة
      * hits)، ثم items، ثم pagination.returnedCount — يُؤخذ الأكبر منها.
      * يُستخدم للسؤال «هل وُجد شيء؟» لا للعدّ الدقيق عبر الصفحات.

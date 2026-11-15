@@ -65,6 +65,7 @@ class ToolRunner(
                     throw McpException(
                         "الأداة $name أعادت خطأ: ${raw.take(300)}",
                         retryable = false,
+                        rawResult = raw,
                     )
                 }
                 log.record(

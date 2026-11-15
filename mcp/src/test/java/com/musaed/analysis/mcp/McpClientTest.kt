@@ -2,6 +2,7 @@ package com.musaed.analysis.mcp
 
 import com.google.gson.JsonParser
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -79,4 +80,15 @@ class McpClientTest {
     // from Deny to Ask")، وهذا نفس سبب فشل Gradle daemon IPC هنا. التحقق الحي
     // يتم على الهاتف نفسه (بوابة قبول المرحلة ١)، حيث يعمل HttpURLConnection
     // مع localhost بشكل طبيعي. منطق التحليل (JSON-RPC/SSE) مغطى بالاختبارات أعلاه.
+
+    @Test
+    fun `rpcError is not retryable`() {
+        // خطأ JSON-RPC من الخادم (مثل -32602 أداة غير معروفة) قرار من
+        // الخادم لا فشل نقل — إعادة المحاولة مضيعة (دليل حي 2026-11-15:
+        // كل أداة مخترعة أُعيدت مرتين بلا فائدة).
+        val client = McpClient("http://127.0.0.1:9/mcp")
+        val err = client.rpcError("tools/call", -32602, "Unknown tool")
+        assertEquals("MCP error -32602 for tools/call: Unknown tool", err.message)
+        assertFalse(err.retryable)
+    }
 }

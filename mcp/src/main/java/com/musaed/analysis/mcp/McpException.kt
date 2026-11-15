@@ -9,4 +9,6 @@ class McpException(
     message: String,
     cause: Throwable? = null,
     val retryable: Boolean = true,
+    /** نتيجة tools/call الخام الكاملة عند فشل الخادم (isError) — ليُستخرج منها تفصيل الخطأ. */
+    val rawResult: String? = null,
 ) : Exception(message, cause)

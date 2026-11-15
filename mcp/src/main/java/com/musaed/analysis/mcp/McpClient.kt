@@ -24,7 +24,7 @@ class McpClient(
         const val DEFAULT_URL = "http://127.0.0.1:8787/mcp"
         const val PROTOCOL_VERSION = "2025-03-26"
         const val CLIENT_NAME = "musaed-analysis-probe"
-        const val CLIENT_VERSION = "0.1.5-phase3"
+        const val CLIENT_VERSION = "0.1.6-phase3"
     }
 
     private var sessionId: String? = null
@@ -114,13 +114,24 @@ class McpClient(
             val err = message.getAsJsonObject("error")
             val code = if (err.has("code")) err.get("code").asInt else -1
             val msg = if (err.has("message")) err.get("message").asString else "unknown error"
-            throw McpException("MCP error $code for $method: $msg")
+            throw rpcError(method, code, msg)
         }
         if (!message.has("result")) {
-            throw McpException("MCP response for $method has no result: ${body.take(500)}")
+            throw McpException(
+                "MCP response for $method has no result: ${body.take(500)}",
+                retryable = false,
+            )
         }
         return message.getAsJsonObject("result")
     }
+
+    /**
+     * خطأ JSON-RPC من الخادم (مثل -32602 أداة غير معروفة): قرار من الخادم
+     * لا فشل نقل — لا يستحق إعادة محاولة. (دليل حي 2026-11-15: النموذج
+     * طلب أدوات مخترعة فأعيد كل طلب مرتين بلا فائدة.)
+     */
+    internal fun rpcError(method: String, code: Int, msg: String): McpException =
+        McpException("MCP error $code for $method: $msg", retryable = false)
 
     private fun sendNotification(method: String, params: JsonObject) {
         val request = JsonObject().apply {

@@ -53,4 +53,15 @@
     <string name="settings_base_label">API Base URL</string>
     <string name="settings_path_label">API Path</string>
     <string name="settings_model_label">النموذج</string>
+    <string name="chat_title">محادثة مع النموذج</string>
+    <string name="chat_hint">اسأل عن التطبيق أو قل ماذا تريد…</string>
+    <string name="chat_send">إرسال</string>
+    <string name="chat_run">نفّذ التحليل بهذه التعليمات</string>
+    <string name="chat_clear">مسح المحادثة</string>
+    <string name="chat_thinking">النموذج يفكّر…</string>
+    <string name="chat_empty">اسأل النموذج عن التطبيق الهدف — يشرح لك قبل أن ينفّذ أي تحليل.</string>
+    <string name="chat_no_instructions">اكتب تعليماتك في المحادثة أولاً، ثم اضغط «نفّذ».</string>
+    <string name="chat_you">أنت</string>
+    <string name="chat_model">النموذج</string>
+    <string name="chat_run_started">أبدأ التحليل الكامل بتعليمات المحادثة…</string>
 </resources>

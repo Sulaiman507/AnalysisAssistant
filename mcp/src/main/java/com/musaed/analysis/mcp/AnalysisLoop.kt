@@ -48,7 +48,11 @@ class AnalysisLoop(
         private const val TOOL_WORKSPACE_OPEN = "mt_apk_workspace_open"
     }
 
-    fun run(targetPackage: String, onStep: (String) -> Unit = {}): AnalysisResult {
+    fun run(
+        targetPackage: String,
+        userInstructions: String? = null,
+        onStep: (String) -> Unit = {},
+    ): AnalysisResult {
         val notes = mutableListOf<String>()
 
         // فتح مساحة عمل للهدف — بلا تجاوز لتطبيق آخر: التحليل يجب أن يكون
@@ -76,7 +80,7 @@ class AnalysisLoop(
 
         val messages = mutableListOf(
             ChatMessage("system", systemPrompt),
-            ChatMessage("user", userRequest(targetPackage, workspaceId, scanText)),
+            ChatMessage("user", userRequest(targetPackage, workspaceId, scanText, userInstructions)),
         )
 
         var stepsUsed = 0
@@ -237,10 +241,20 @@ class AnalysisLoop(
         return null
     }
 
-    private fun userRequest(targetPackage: String, workspaceId: String, scanText: String): String {
+    private fun userRequest(
+        targetPackage: String,
+        workspaceId: String,
+        scanText: String,
+        userInstructions: String? = null,
+    ): String {
         return buildString {
             appendLine("حلّل التطبيق $targetPackage (مساحة العمل $workspaceId).")
             appendLine()
+            if (!userInstructions.isNullOrBlank()) {
+                appendLine("تعليمات المستخدم من المحادثة — نفّذ التحليل وفقها:")
+                appendLine(userInstructions)
+                appendLine()
+            }
             appendLine(scanText)
             appendLine()
             appendLine(toolCatalog)

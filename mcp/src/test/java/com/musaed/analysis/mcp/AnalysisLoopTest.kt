@@ -214,4 +214,16 @@ class AnalysisLoopTest {
         // وخطأ الخادم سُجل مرة واحدة فقط (بلا إعادة محاولة)
         assertEquals(1, log.entries().count { it.tool == "mt_apk_dex_list_classes" && it.status == "error" })
     }
+
+    /** تعليمات المحادثة تصل للحلقة مع رسالة المستخدم الأولى. */
+    @Test
+    fun `user instructions reach the first user message`() {
+        val model = FakeModel(listOf(finalReport))
+        val (loop, _) = makeLoop(model)
+        val result = loop.run("com.musaed.test.clear", userInstructions = "ركز على فحص الدفع")
+        assertTrue(result.success)
+        val firstUser = model.messagesSeen[0][1]
+        assertTrue(firstUser.content.contains("تعليمات المستخدم من المحادثة"))
+        assertTrue(firstUser.content.contains("ركز على فحص الدفع"))
+    }
 }

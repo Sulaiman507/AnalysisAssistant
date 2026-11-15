@@ -17,6 +17,10 @@ import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.musaed.analysis.mcp.AnalysisLoop
 import com.musaed.analysis.mcp.AnalysisStore
+import com.musaed.analysis.mcp.ChatAgent
+import com.musaed.analysis.mcp.ChatOutcome
+import com.musaed.analysis.mcp.ChatSession
+import com.musaed.analysis.mcp.ChatStore
 import com.musaed.analysis.mcp.GateTestStore
 import com.musaed.analysis.mcp.GateTester
 import com.musaed.analysis.mcp.McpClient
@@ -64,6 +68,17 @@ class MainActivity : Activity() {
     private lateinit var analysisButton: Button
     private lateinit var settingsStatus: TextView
     private var providerSettings: ProviderSettings = ProviderSettings.deepSeek()
+
+    // المحادثة مع النموذج: تُحفظ على الجهاز فقط، وآخر تقرير تحليل يُمرَّر
+    // كسياق للنموذج حتى يشرح منه. سجل أدوات المحادثة منفصل عن سجل التحليل.
+    private lateinit var chatMessagesLayout: LinearLayout
+    private lateinit var chatInput: EditText
+    private lateinit var chatSendButton: Button
+    private lateinit var chatRunButton: Button
+    private lateinit var chatClearButton: Button
+    private var chatSession = ChatSession()
+    private var chatLog = SessionLog()
+    private var lastReportJson: String? = null
 
     private var lastDir: File? = null
 
@@ -176,6 +191,44 @@ class MainActivity : Activity() {
         settingsCard.addView(settingsStatus)
         addCard(root, settingsCard)
 
+        // بطاقة المحادثة مع النموذج — تشرح قبل التنفيذ، وتقرأ الكود عند
+        // الحاجة (قراءة فقط). الرسائل في نفس تمريرة الصفحة بلا تمرير
+        // متداخل، وتُعرض آخر 30 دوراً فقط.
+        val chatCard = sectionCard()
+        chatCard.addView(sectionTitle(getString(R.string.chat_title)))
+        chatMessagesLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        chatCard.addView(chatMessagesLayout)
+        chatInput = styledField(getString(R.string.chat_hint)).apply {
+            minHeight = dp(48)
+        }
+        chatCard.addView(chatInput)
+        chatSendButton = styledButton(getString(R.string.chat_send), true).apply {
+            setOnClickListener { sendChat() }
+        }
+        chatCard.addView(chatSendButton, fullWidthParams())
+        chatRunButton = styledButton(getString(R.string.chat_run), false).apply {
+            setOnClickListener {
+                val instructions = chatSession.instructionsForAnalysis()
+                if (instructions.isBlank()) {
+                    Toast.makeText(this@MainActivity, R.string.chat_no_instructions, Toast.LENGTH_SHORT).show()
+                } else {
+                    runAnalysis(instructions)
+                }
+            }
+        }
+        chatClearButton = styledButton(getString(R.string.chat_clear), false).apply {
+            setOnClickListener {
+                chatSession = ChatSession()
+                chatLog = SessionLog()
+                ChatStore.save(mcpDir(), chatSession, chatLog)
+                renderChat()
+            }
+        }
+        chatCard.addView(buttonRow(chatRunButton, chatClearButton))
+        addCard(root, chatCard)
+
         // بطاقة النتائج
         val resultsCard = sectionCard()
         val resultsHeader = LinearLayout(this).apply {
@@ -204,6 +257,8 @@ class MainActivity : Activity() {
 
         setContentView(scroll)
         loadProviderSettings()
+        chatSession = ChatStore.load(mcpDir())
+        renderChat()
     }
 
     // ——— عناصر الواجهة الداكنة الرسمية ———
@@ -302,7 +357,122 @@ class MainActivity : Activity() {
         analysisButton.isEnabled = !busy
         fetchModelsButton.isEnabled = !busy
         saveSettingsButton.isEnabled = !busy
+        chatSendButton.isEnabled = !busy
+        chatRunButton.isEnabled = !busy
+        chatClearButton.isEnabled = !busy
         shareButton.isEnabled = !busy && lastDir != null
+    }
+
+    /** يعيد رسم أدوار المحادثة (آخر 30 دوراً) في بطاقة المحادثة. */
+    private fun renderChat() {
+        chatMessagesLayout.removeAllViews()
+        val turns = chatSession.turns()
+        if (turns.isEmpty()) {
+            chatMessagesLayout.addView(TextView(this).apply {
+                text = getString(R.string.chat_empty)
+                textSize = 14f
+                setTextColor(0xFF9E9E9E.toInt())
+                setPadding(0, dp(4), 0, dp(4))
+            })
+            return
+        }
+        turns.takeLast(30).forEach { turn ->
+            val who = if (turn.role == "user") {
+                getString(R.string.chat_you)
+            } else {
+                getString(R.string.chat_model)
+            }
+            chatMessagesLayout.addView(TextView(this).apply {
+                text = "$who: ${turn.content}"
+                textSize = 15f
+                setTextColor(0xFFF5F5F5.toInt())
+                background = roundedBg(
+                    if (turn.role == "user") 0xFF1B5E4B.toInt() else 0xFF2A2A2A.toInt(),
+                    0, 10,
+                )
+                setPadding(dp(12), dp(10), dp(12), dp(10))
+            }, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(6) })
+        }
+    }
+
+    /** يرسل رسالة محادثة للنموذج؛ قد يقرأ الكود ليشرح، أو يطلب «نفّذ». */
+    private fun sendChat() {
+        val text = chatInput.text.toString().trim()
+        if (text.isBlank()) return
+        val settings = settingsFromFields()
+        if (!settings.isConfigured()) {
+            settingsStatus.text = getString(R.string.analysis_no_provider)
+            return
+        }
+        providerSettings = settings
+        chatInput.setText("")
+        setBusy(true)
+        statusView.text = getString(R.string.chat_thinking)
+        thread {
+            val client = McpClient()
+            chatLog = SessionLog()
+            val runner = ToolRunner(client::callTool, chatLog)
+            try {
+                client.connect()
+                val model = ModelClient(settings.toModelConfig())
+                val target = targetInput.text.toString().trim().ifBlank { null }
+                val agent = ChatAgent(
+                    model::chat, runner, target,
+                    lastReportJson?.take(2000),
+                )
+                val outcome = agent.respond(chatSession, text) { step ->
+                    runOnUiThread { statusView.text = step }
+                }
+                val dir = mcpDir()
+                ChatStore.save(dir, chatSession, chatLog)
+                lastDir = dir
+                runOnUiThread {
+                    renderChat()
+                    setBusy(false)
+                    shareButton.isEnabled = true
+                    if (outcome is ChatOutcome.RunAnalysis) {
+                        statusView.text = getString(R.string.chat_run_started)
+                        runAnalysis(outcome.instructions)
+                    }
+                }
+            } catch (e: McpException) {
+                runOnUiThread {
+                    statusView.text = getString(R.string.status_failed, e.message ?: "")
+                    recoverChatMessage(text)
+                    setBusy(false)
+                }
+            } catch (e: ModelException) {
+                runOnUiThread {
+                    statusView.text = getString(R.string.analysis_failed, e.message ?: "")
+                    recoverChatMessage(text)
+                    setBusy(false)
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    statusView.text = getString(R.string.analysis_failed, e.message ?: e.toString())
+                    recoverChatMessage(text)
+                    setBusy(false)
+                }
+            } finally {
+                runner.shutdown()
+            }
+        }
+    }
+
+    /**
+     * إن فشلت رسالة المحادثة قبل أن يسجّلها الوكيل (مثلاً فشل الاتصال
+     * بخدمة MT قبل الرد)، تُحفظ رسالة المستخدم كما هي حتى لا تضيع من
+     * الشاشة — فيعيد إرسالها لاحقاً.
+     */
+    private fun recoverChatMessage(text: String) {
+        if (chatSession.turns().lastOrNull()?.content != text) {
+            chatSession.addUser(text)
+            ChatStore.save(mcpDir(), chatSession, chatLog)
+        }
+        renderChat()
     }
 
     private fun mcpDir(): File = File(filesDir, "mcp")
@@ -546,8 +716,9 @@ class MainActivity : Activity() {
         }
     }
 
-    /** التحليل الكامل (المرحلة 3): الفحص السريع ثم حلقة الوكيل ببرومبت v1.1. */
-    private fun runAnalysis() {
+    /** التحليل الكامل (المرحلة 3): الفحص السريع ثم حلقة الوكيل ببرومبت v1.1.
+     *  تعليمات المحادثة — إن وُجدت — تُمرَّر للحلقة مع رسالة المستخدم الأولى. */
+    private fun runAnalysis(userInstructions: String? = null) {
         val settings = settingsFromFields()
         if (!settings.isConfigured()) {
             settingsStatus.text = getString(R.string.analysis_no_provider)
@@ -566,13 +737,14 @@ class MainActivity : Activity() {
                 client.connect()
                 val model = ModelClient(settings.toModelConfig())
                 val loop = AnalysisLoop(model::chat, runner, log, SystemPrompt.TEXT)
-                val result = loop.run(target) { step ->
+                val result = loop.run(target, userInstructions) { step ->
                     runOnUiThread { statusView.text = step }
                 }
                 val dir = mcpDir()
                 SessionLogStore.save(dir, log)
                 AnalysisStore.save(dir, result)
                 lastDir = dir
+                lastReportJson = result.reportJson
                 runOnUiThread {
                     statusView.text = if (result.success) {
                         getString(R.string.analysis_ok, result.stepsUsed, result.targetPackage)

@@ -1,0 +1,16 @@
+نتيجة التحليل — مساعد التحليل (المرحلة ٣)
+التطبيق الهدف: com.musaed.test.clear
+مساحة العمل: qdsnpvgq
+الخطوات المستخدمة: 40
+النتيجة: غير مكتمل ✗
+ملاحظة: فشل استدعاء النموذج (خطوة 2): المزوّد أعاد HTTP 502: {"type":"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-502/","title":"Error 502: Bad gateway","status":502,"detail":"The origin web server returned an invalid or incomplete response to Cloudflare. This typically indicates the origin is overlo
+ملاحظة: فشل استدعاء النموذج (خطوة 3): المزوّد أعاد HTTP 502: {"type":"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-502/","title":"Error 502: Bad gateway","status":502,"detail":"The origin web server returned an invalid or incomplete response to Cloudflare. This typically indicates the origin is overlo
+ملاحظة: فشل استدعاء النموذج (خطوة 13): المزوّد أعاد HTTP 502: {"type":"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-502/","title":"Error 502: Bad gateway","status":502,"detail":"The origin web server returned an invalid or incomplete response to Cloudflare. This typically indicates the origin is overlo
+ملاحظة: فشل استدعاء النموذج (خطوة 19): المزوّد أعاد HTTP 502: {"type":"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-502/","title":"Error 502: Bad gateway","status":502,"detail":"The origin web server returned an invalid or incomplete response to Cloudflare. This typically indicates the origin is overlo
+ملاحظة: فشل استدعاء النموذج (خطوة 21): المزوّد أعاد HTTP 502: {"type":"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-502/","title":"Error 502: Bad gateway","status":502,"detail":"The origin web server returned an invalid or incomplete response to Cloudflare. This typically indicates the origin is overlo
+ملاحظة: فشل استدعاء النموذج (خطوة 27): المزوّد أعاد HTTP 502: {"type":"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-502/","title":"Error 502: Bad gateway","status":502,"detail":"The origin web server returned an invalid or incomplete response to Cloudflare. This typically indicates the origin is overlo
+ملاحظة: فشل استدعاء النموذج (خطوة 31): المزوّد أعاد HTTP 502: {"type":"https://developers.cloudflare.com/support/troubleshooting/http-status-codes/cloudflare-5xx-errors/error-502/","title":"Error 502: Bad gateway","status":502,"detail":"The origin web server returned an invalid or incomplete response to Cloudflare. This typically indicates the origin is overlo
+ملاحظة: انتهى سقف الخطوات (40) دون تقرير نهائي.
+
+التقرير JSON:
+(لا يوجد تقرير)

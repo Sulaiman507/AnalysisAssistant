@@ -1,0 +1,14 @@
+نتيجة التحليل — مساعد التحليل (المرحلة ٣)
+التطبيق الهدف: com.musaed.test.clear
+مساحة العمل: epuqq70o
+الخطوات المستخدمة: 13
+النتيجة: غير مكتمل ✗
+ملاحظة: فشل استدعاء النموذج (خطوة 1): انتهت مهلة الاتصال بالمزوّد https://api.gonkarouter.io/v1/chat/completions.
+ملاحظة: فشل استدعاء النموذج (خطوة 3): انتهت مهلة الاتصال بالمزوّد https://api.gonkarouter.io/v1/chat/completions.
+ملاحظة: فشل استدعاء النموذج (خطوة 11): تعذّر الوصول إلى المزوّد https://api.gonkarouter.io/v1: Unable to resolve host "api.gonkarouter.io": No address associated with hostname
+ملاحظة: فشل استدعاء النموذج (خطوة 12): تعذّر الوصول إلى المزوّد https://api.gonkarouter.io/v1: Unable to resolve host "api.gonkarouter.io": No address associated with hostname
+ملاحظة: فشل استدعاء النموذج (خطوة 13): تعذّر الوصول إلى المزوّد https://api.gonkarouter.io/v1: Unable to resolve host "api.gonkarouter.io": No address associated with hostname
+ملاحظة: توقف بعد 3 أخطاء متتالية من النموذج.
+
+التقرير JSON:
+(لا يوجد تقرير)

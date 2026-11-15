@@ -8,6 +8,7 @@ object StressTestStore {
 
     fun save(dir: File, result: StressTestResult): File {
         dir.mkdirs()
+        OutputArchive.preserve(dir, STRESS_FILE)
         return File(dir, STRESS_FILE).also { it.writeText(result.report) }
     }
 }

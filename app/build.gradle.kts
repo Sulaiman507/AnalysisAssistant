@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
 }
 
 android {
@@ -12,17 +11,14 @@ android {
         applicationId = "com.musaed.analysis"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.1.2-phase2"
+        versionCode = 4
+        versionName = "0.1.3-phase2"
     }
 
     buildTypes {
         debug {
             // debug فقط: يسمح بتثبيت نسخة الفحص بجانب أي نسخة لاحقة
             applicationIdSuffix = ".debug"
-        }
-        release {
-            minifyEnabled = false
         }
     }
 

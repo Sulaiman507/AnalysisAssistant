@@ -9,6 +9,8 @@ object SessionLogStore {
 
     fun save(dir: File, log: SessionLog): Pair<File, File> {
         dir.mkdirs()
+        OutputArchive.preserve(dir, JSON_FILE)
+        OutputArchive.preserve(dir, TEXT_FILE)
         val jsonFile = File(dir, JSON_FILE)
         jsonFile.writeText(log.toJsonString())
         val textFile = File(dir, TEXT_FILE)

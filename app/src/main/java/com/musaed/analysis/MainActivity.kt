@@ -274,14 +274,7 @@ class MainActivity : Activity() {
     private fun shareList() {
         val dir = lastDir ?: return
         val uris = ArrayList<Uri>()
-        listOf(
-            ToolsListStore.JSON_FILE,
-            ToolsListStore.TEXT_FILE,
-            GateTestStore.GATE_FILE,
-            SessionLogStore.JSON_FILE,
-            SessionLogStore.TEXT_FILE,
-            StressTestStore.STRESS_FILE,
-        ).map { File(dir, it) }.filter { it.exists() }.forEach { file ->
+        dir.listFiles()?.filter { it.isFile }?.sortedBy { it.name }?.forEach { file ->
             uris.add(FileProvider.getUriForFile(this, "${packageName}.fileprovider", file))
         }
         if (uris.isEmpty()) {

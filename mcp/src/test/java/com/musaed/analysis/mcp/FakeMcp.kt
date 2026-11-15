@@ -56,12 +56,17 @@ internal object FakeMcp {
 internal class FakeServer(
     private val responses: Map<String, JsonObject>,
     private val failNames: Set<String> = emptySet(),
+    private val sequential: Map<String, List<JsonObject>> = emptyMap(),
 ) {
     val calls = mutableListOf<Pair<String, JsonObject>>()
+    private val queues: Map<String, MutableList<JsonObject>> =
+        sequential.mapValues { it.value.toMutableList() }
 
     fun call(name: String, args: JsonObject): JsonObject {
         calls += name to args
         if (name in failNames) throw McpException("فشل وهمي للأداة $name")
+        val queue = queues[name]
+        if (queue != null && queue.isNotEmpty()) return queue.removeAt(0)
         return responses[name] ?: throw IllegalStateException("unexpected tool call: $name")
     }
 }

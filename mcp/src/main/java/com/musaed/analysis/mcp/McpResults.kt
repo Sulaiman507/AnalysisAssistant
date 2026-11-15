@@ -72,6 +72,33 @@ internal object McpResults {
         return null
     }
 
+    fun intOf(obj: JsonObject, vararg keys: String): Int? {
+        for (k in keys) {
+            if (!obj.has(k) || obj.get(k).isJsonNull) continue
+            val el = obj.get(k)
+            if (!el.isJsonPrimitive) continue
+            val p = el.asJsonPrimitive
+            if (p.isNumber) return p.asInt
+            if (p.isString) p.asString.toIntOrNull()?.let { return it }
+        }
+        return null
+    }
+
+    fun dexEntriesCount(data: JsonObject): Int {
+        if (data.has("counts") && data.get("counts").isJsonObject) {
+            intOf(data.getAsJsonObject("counts"), "dexEntries", "dex_entries")?.let { return it }
+        }
+        return intOf(data, "dexEntries", "dex_entries") ?: 0
+    }
+
+    fun zipEntryName(item: JsonObject): String {
+        val raw = firstString(item, "locator", "path", "name") ?: ""
+        return raw.substringAfter("zip_entry:")
+    }
+
+    fun countDexZipEntries(data: JsonObject): Int =
+        itemsOf(data).count { zipEntryName(it).lowercase().endsWith(".dex") }
+
     /**
      * يستخرج نص كود من data: textWindow.text أولاً (كما في وصف أدوات القراءة
      * في القائمة الحية)، ثم حقل text المباشر. يعيد null إن لم يوجد نص.

@@ -2,8 +2,10 @@ package com.musaed.analysis.mcp
 
 import com.google.gson.JsonParser
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 import java.nio.file.Files
 
 class SessionLogTest {
@@ -40,6 +42,26 @@ class SessionLogTest {
         val (jsonFile, textFile) = SessionLogStore.save(dir, log)
         assertTrue(jsonFile.readText().contains(longRaw))
         assertTrue(textFile.readText().contains("اقتُطعت"))
+    }
+
+    @Test
+    fun `save archives previous session files instead of replacing them`() {
+        val dir = Files.createTempDirectory("sessionlog-archive").toFile()
+        val first = SessionLog()
+        first.record(1, 1, "mt_apk_read_signature", "{}", "ok", 1, "FIRST_RUN", null)
+        SessionLogStore.save(dir, first)
+        val second = SessionLog()
+        second.record(1, 1, "mt_apk_search", "{}", "ok", 1, "SECOND_RUN", null)
+        SessionLogStore.save(dir, second)
+        val current = File(dir, SessionLogStore.JSON_FILE).readText()
+        assertTrue(current.contains("SECOND_RUN"))
+        assertFalse(current.contains("FIRST_RUN"))
+        val archived = dir.listFiles()?.filter {
+            it.name.startsWith("session_log_") && it.name.endsWith(".json") &&
+                it.name != SessionLogStore.JSON_FILE
+        } ?: emptyList()
+        assertEquals(1, archived.size)
+        assertTrue(archived[0].readText().contains("FIRST_RUN"))
     }
 
     @Test

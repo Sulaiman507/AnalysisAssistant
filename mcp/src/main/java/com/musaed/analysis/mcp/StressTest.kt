@@ -20,7 +20,8 @@ data class StressTestResult(
 
 /**
  * اختبار إجهاد طبقة الأدوات (المرحلة ٢): سكربت ثابت من ٢٠ استدعاء أداة
- * بالترتيب ضد تطبيق هدف (الافتراضي MT Manager نفسه). كل خطوة عبر
+ * بالترتيب ضد تطبيق هدف (الافتراضي MT Manager نفسه). إن رفضت الخدمة فتح
+ * الحزمة بـ APK_OPEN_BLOCKED يُفتح تطبيق مستخدم آخر تلقائياً. كل خطوة عبر
  * المغلّف (مهلة + إعادة محاولة واحدة)؛ فشل خطوة يُسجَّل ويُتابَع دون
  * انهيار. بعد الـ٢٠ تُبنى حزمة كلاس واحدة للكلاس الأول عبر بنّاء السياق
  * كدليل إضافي خارج العدّ.
@@ -62,6 +63,7 @@ class StressTester(
         var secondClass: String? = null
         var firstMethod: String? = null
         var nextCursor: String? = null
+        val candidates = mutableListOf<Pair<String, String>>()
 
         fun markOk(n: Int, tool: String) {
             callsOk++
@@ -99,6 +101,7 @@ class StressTester(
                     addProperty("appType", "user")
                     addProperty("limit", 50)
                 }, step = 1)
+                candidates += installedApps(result)
                 findInstalled(result, targetPackage)
             } catch (e: McpException) {
                 null
@@ -116,6 +119,7 @@ class StressTester(
                         addProperty("appType", "user")
                         addProperty("limit", 50)
                     }, step = 1)
+                    candidates += installedApps(result)
                     findMtApp(result)
                 } catch (e: McpException) {
                     null
@@ -136,12 +140,17 @@ class StressTester(
                 }
             }
 
-        // الخطوة ٢ — فتح مساحة عمل مؤقتة
-        val opened = doStep(2, TOOL_WORKSPACE_OPEN, JsonObject().apply {
-            addProperty("path", targetPath)
-            addProperty("temporary", true)
-        })
-        workspaceId = opened?.let { McpResults.firstString(McpResults.dataOf(it), "workspaceId", "workspace_id", "id") }
+        // الخطوة ٢ — فتح مساحة عمل مؤقتة؛ عند APK_OPEN_BLOCKED يُجرَّب تطبيق مستخدم آخر
+        val opened = openWorkspace(targetPath, resolvedPackage, candidates, stepLines, onStep)
+        callsMade++
+        if (opened != null) {
+            callsOk++
+            resolvedPackage = opened.pkg
+            targetPath = opened.path
+        }
+        workspaceId = opened?.result?.let {
+            McpResults.firstString(McpResults.dataOf(it), "workspaceId", "workspace_id", "id")
+        }
         if (workspaceId == null) {
             for (n in 3..20) markSkip(n, stepToolName(n), "لا توجد مساحة عمل")
             return finish(
@@ -152,6 +161,7 @@ class StressTester(
             )
         }
         val ws = workspaceId
+        dexCount = opened?.result?.let { McpResults.dexEntriesCount(McpResults.dataOf(it)) } ?: 0
 
         // الخطوة ٣ — سرد إدخالات ZIP وعدّ ملفات DEX
         val entries = doStep(3, TOOL_LIST_ENTRIES, JsonObject().apply {
@@ -161,10 +171,8 @@ class StressTester(
             addProperty("limit", 200)
         })
         if (entries != null) {
-            dexCount = McpResults.itemsOf(McpResults.dataOf(entries)).count { item ->
-                val p = McpResults.firstString(item, "path", "name") ?: ""
-                p.lowercase().endsWith(".dex")
-            }
+            val listed = McpResults.countDexZipEntries(McpResults.dataOf(entries))
+            if (listed > dexCount) dexCount = listed
         }
 
         // الخطوة ٤ — قراءة التوقيع
@@ -422,6 +430,92 @@ class StressTester(
         else -> TOOL_DEX_LIST_CLASSES
     }
 
+    private data class OpenedWorkspace(
+        val result: JsonObject,
+        val path: String,
+        val pkg: String,
+    )
+
+    private fun openWorkspace(
+        firstPath: String,
+        firstPkg: String,
+        known: List<Pair<String, String>>,
+        stepLines: MutableList<String>,
+        onStep: (String) -> Unit,
+    ): OpenedWorkspace? {
+        val tried = linkedSetOf<String>()
+        val queue = ArrayDeque<Pair<String, String>>()
+        queue += firstPath to firstPkg
+        for (c in known) {
+            if (c.first != firstPath) queue += c
+        }
+
+        fun tryOpen(path: String, pkg: String): Pair<JsonObject?, String?> {
+            onStep("خطوة ٢/٢٠: $TOOL_WORKSPACE_OPEN ($pkg)")
+            return try {
+                val result = runner.call(TOOL_WORKSPACE_OPEN, JsonObject().apply {
+                    addProperty("path", path)
+                    addProperty("temporary", true)
+                }, step = 2)
+                result to null
+            } catch (e: McpException) {
+                null to (e.message ?: e.toString())
+            }
+        }
+
+        var lastError: String? = null
+        while (queue.isNotEmpty()) {
+            val (path, pkg) = queue.removeFirst()
+            if (!tried.add(path)) continue
+            val (result, error) = tryOpen(path, pkg)
+            if (result != null) {
+                val note = if (pkg != firstPkg) {
+                    " (بديل بعد حظر $firstPkg)"
+                } else {
+                    ""
+                }
+                stepLines += "  2 — $TOOL_WORKSPACE_OPEN: ناجحة ✓$note — الهدف: $pkg"
+                return OpenedWorkspace(result, path, pkg)
+            }
+            lastError = error
+            if (error != null && error.contains("APK_OPEN_BLOCKED")) {
+                stepLines += "  2 — $TOOL_WORKSPACE_OPEN: محظور على $pkg — البحث عن تطبيق مستخدم آخر…"
+                if (queue.isEmpty()) {
+                    val extras = listUserApps(exclude = tried)
+                    queue.addAll(extras)
+                }
+                continue
+            }
+            stepLines += "  2 — $TOOL_WORKSPACE_OPEN: فاشلة ✗ — ${error ?: "فشل غير معروف"}"
+            return null
+        }
+        stepLines += "  2 — $TOOL_WORKSPACE_OPEN: فاشلة ✗ — ${lastError ?: "لا تطبيق بديل قابل للفتح"}"
+        return null
+    }
+
+    private fun listUserApps(exclude: Set<String>): List<Pair<String, String>> {
+        return try {
+            val result = runner.call(TOOL_LIST_INSTALLED, JsonObject().apply {
+                addProperty("query", "com")
+                addProperty("appType", "user")
+                addProperty("limit", 50)
+            }, step = 2)
+            installedApps(result).filter { it.first !in exclude }
+        } catch (_: McpException) {
+            emptyList()
+        }
+    }
+
+    private fun installedApps(result: JsonObject): List<Pair<String, String>> {
+        val out = mutableListOf<Pair<String, String>>()
+        for (item in McpResults.itemsOf(McpResults.dataOf(result))) {
+            val path = McpResults.firstString(item, "path") ?: continue
+            val pkg = McpResults.firstString(item, "packageName", "package", "name") ?: ""
+            out += path to pkg.ifBlank { path.substringAfterLast('/') }
+        }
+        return out
+    }
+
     /** يبحث في نتيجة سرد التطبيقات عن الحزمة المطلوبة ويعيد (المسار، الحزمة). */
     private fun findInstalled(result: JsonObject, want: String): Pair<String, String>? {
         for (item in McpResults.itemsOf(McpResults.dataOf(result))) {
@@ -482,10 +576,11 @@ class StressTester(
         return null
     }
 
-    /** بادئة حزمة الكلاس: من dex_class:com/foo/Bar; إلى Lcom/foo/ . */
+    /** بادئة حزمة الكلاس: من dex_class:Lcom/foo/Bar; أو dex_class:com/foo/Bar; إلى Lcom/foo/ . */
     private fun packagePrefixOf(classLocator: String): String {
         val desc = classLocator.removePrefix("dex_class:")
-        val pkg = desc.substringBeforeLast("/", missingDelimiterValue = "")
+        val body = desc.removePrefix("L").removeSuffix(";")
+        val pkg = body.substringBeforeLast("/", missingDelimiterValue = "")
         return if (pkg.isEmpty()) "" else "L$pkg/"
     }
 }

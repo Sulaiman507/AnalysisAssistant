@@ -11,6 +11,7 @@ object GateTestStore {
 
     fun save(dir: File, result: GateTestResult): File {
         dir.mkdirs()
+        OutputArchive.preserve(dir, GATE_FILE)
         val now = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(Date())
         val text = buildString {
             appendLine("نتيجة اختبار البوابة — حُفظت $now")

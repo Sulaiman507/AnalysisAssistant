@@ -8,6 +8,7 @@ import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.text.InputType
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -82,32 +83,78 @@ class MainActivity : Activity() {
 
     private var lastDir: File? = null
 
+    // التبويبات الثلاثة: الرئيسية (الهدف + الإجراءات + النتائج)، المحادثة،
+    // الإعدادات. العنوان والحالة ثابتان فوق التبويبات وتبديلها لا يمس
+    // حالة الأزرار — فيبدّل المستخدم التبويب أثناء تشغيل عملية.
+    private lateinit var mainTabButton: Button
+    private lateinit var chatTabButton: Button
+    private lateinit var settingsTabButton: Button
+    private lateinit var mainScroll: ScrollView
+    private lateinit var settingsScroll: ScrollView
+    private lateinit var chatContainer: LinearLayout
+    private lateinit var chatScroll: ScrollView
+    private var currentTab = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // كل الصفحة في تمريرة واحدة — لا تمرير متداخل: الأقسام والنتائج
-        // كلها في ScrollView واحد، فلا تنقطع الأزرار ولا الحقول عن الشاشة.
-        val scroll = ScrollView(this)
+        // الجذر عمودي: عنوان + حالة ثابتان، ثم شريط تبويبات، ثم محتوى
+        // التبويب النشط فقط (يملأ باقي الشاشة). كل تبويب له تمريره الخاص.
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(0xFF121212.toInt())
-            setPadding(dp(16), dp(16), dp(16), dp(16))
         }
-        scroll.addView(root)
 
         val titleView = TextView(this).apply {
             text = getString(R.string.app_name)
             textSize = 24f
             setTypeface(null, Typeface.BOLD)
             setTextColor(0xFFF5F5F5.toInt())
+            setPadding(dp(16), dp(16), dp(16), 0)
         }
         statusView = TextView(this).apply {
             text = getString(R.string.status_not_checked)
             textSize = 15f
             setTextColor(0xFFE0E0E0.toInt())
-            setPadding(0, dp(6), 0, dp(4))
+            setPadding(dp(16), dp(6), dp(16), dp(4))
         }
         root.addView(titleView)
         root.addView(statusView)
+
+        // شريط التبويبات
+        val tabBar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+        }
+        mainTabButton = tabButton(getString(R.string.tab_main), 0)
+        chatTabButton = tabButton(getString(R.string.tab_chat), 1)
+        settingsTabButton = tabButton(getString(R.string.tab_settings), 2)
+        tabBar.addView(mainTabButton, tabButtonParams())
+        tabBar.addView(chatTabButton, tabButtonParams())
+        tabBar.addView(settingsTabButton, tabButtonParams())
+        root.addView(tabBar)
+
+        // حاويات التبويبات — الظاهر منها واحد فقط في كل لحظة
+        val tabContentParams = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f,
+        )
+        val mainContent = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(8), dp(16), dp(16))
+        }
+        mainScroll = ScrollView(this).apply { addView(mainContent) }
+        root.addView(mainScroll, tabContentParams)
+
+        val settingsContent = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(8), dp(16), dp(16))
+        }
+        settingsScroll = ScrollView(this).apply {
+            addView(settingsContent)
+            visibility = View.GONE
+        }
+        root.addView(settingsScroll, tabContentParams)
+
+        buildChatTab(root, tabContentParams)
 
         // بطاقة الهدف
         val targetCard = sectionCard()
@@ -116,7 +163,7 @@ class MainActivity : Activity() {
             setText(StressTester.DEFAULT_TARGET)
         }
         targetCard.addView(targetInput)
-        addCard(root, targetCard)
+        addCard(mainContent, targetCard)
 
         // بطاقة الإجراءات
         val actionsCard = sectionCard()
@@ -144,7 +191,7 @@ class MainActivity : Activity() {
             setOnClickListener { shareList() }
         }
         actionsCard.addView(shareButton, fullWidthParams())
-        addCard(root, actionsCard)
+        addCard(mainContent, actionsCard)
 
         // بطاقة إعدادات النموذج — المفتاح يبقى في الجهاز فقط
         // (SharedPreferences) ولا يُرسل إلا إلى المزوّد نفسه.
@@ -189,45 +236,7 @@ class MainActivity : Activity() {
             setPadding(0, dp(8), 0, 0)
         }
         settingsCard.addView(settingsStatus)
-        addCard(root, settingsCard)
-
-        // بطاقة المحادثة مع النموذج — تشرح قبل التنفيذ، وتقرأ الكود عند
-        // الحاجة (قراءة فقط). الرسائل في نفس تمريرة الصفحة بلا تمرير
-        // متداخل، وتُعرض آخر 30 دوراً فقط.
-        val chatCard = sectionCard()
-        chatCard.addView(sectionTitle(getString(R.string.chat_title)))
-        chatMessagesLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
-        chatCard.addView(chatMessagesLayout)
-        chatInput = styledField(getString(R.string.chat_hint)).apply {
-            minHeight = dp(48)
-        }
-        chatCard.addView(chatInput)
-        chatSendButton = styledButton(getString(R.string.chat_send), true).apply {
-            setOnClickListener { sendChat() }
-        }
-        chatCard.addView(chatSendButton, fullWidthParams())
-        chatRunButton = styledButton(getString(R.string.chat_run), false).apply {
-            setOnClickListener {
-                val instructions = chatSession.instructionsForAnalysis()
-                if (instructions.isBlank()) {
-                    Toast.makeText(this@MainActivity, R.string.chat_no_instructions, Toast.LENGTH_SHORT).show()
-                } else {
-                    runAnalysis(instructions)
-                }
-            }
-        }
-        chatClearButton = styledButton(getString(R.string.chat_clear), false).apply {
-            setOnClickListener {
-                chatSession = ChatSession()
-                chatLog = SessionLog()
-                ChatStore.save(mcpDir(), chatSession, chatLog)
-                renderChat()
-            }
-        }
-        chatCard.addView(buttonRow(chatRunButton, chatClearButton))
-        addCard(root, chatCard)
+        addCard(settingsContent, settingsCard)
 
         // بطاقة النتائج
         val resultsCard = sectionCard()
@@ -253,12 +262,118 @@ class MainActivity : Activity() {
             setPadding(0, dp(8), 0, 0)
         }
         resultsCard.addView(resultView)
-        addCard(root, resultsCard)
+        addCard(mainContent, resultsCard)
 
-        setContentView(scroll)
+        setContentView(root)
         loadProviderSettings()
         chatSession = ChatStore.load(mcpDir())
         renderChat()
+        showTab(0)
+    }
+
+    /**
+     * يبني تبويب المحادثة: رسائل تملأ الشاشة وتمرّر وحدها، وصف ثابت في
+     * الأسفل فيه حقل الكتابة وزر الإرسال — مثل أي تطبيق محادثة. فوقه
+     * صف «نفّذ» و«مسح».
+     */
+    private fun buildChatTab(root: LinearLayout, tabContentParams: LinearLayout.LayoutParams) {
+        chatContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+        chatMessagesLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(8), dp(16), dp(8))
+        }
+        chatScroll = ScrollView(this).apply { addView(chatMessagesLayout) }
+        chatContainer.addView(
+            chatScroll,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f,
+            ),
+        )
+        chatRunButton = styledButton(getString(R.string.chat_run), false).apply {
+            setOnClickListener {
+                val instructions = chatSession.instructionsForAnalysis()
+                if (instructions.isBlank()) {
+                    Toast.makeText(this@MainActivity, R.string.chat_no_instructions, Toast.LENGTH_SHORT).show()
+                } else {
+                    runAnalysis(instructions)
+                }
+            }
+        }
+        chatClearButton = styledButton(getString(R.string.chat_clear), false).apply {
+            setOnClickListener {
+                chatSession = ChatSession()
+                chatLog = SessionLog()
+                ChatStore.save(mcpDir(), chatSession, chatLog)
+                renderChat()
+            }
+        }
+        val actionsRow = buttonRow(chatRunButton, chatClearButton).apply {
+            setPadding(dp(16), dp(8), dp(16), 0)
+        }
+        chatContainer.addView(actionsRow)
+        chatInput = styledField(getString(R.string.chat_hint)).apply {
+            minHeight = dp(48)
+        }
+        chatSendButton = styledButton(getString(R.string.chat_send), true).apply {
+            setOnClickListener { sendChat() }
+        }
+        val inputRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(dp(16), dp(8), dp(16), dp(16))
+        }
+        inputRow.addView(
+            chatInput,
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f),
+        )
+        inputRow.addView(
+            chatSendButton,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { leftMargin = dp(8) },
+        )
+        chatContainer.addView(inputRow)
+        root.addView(chatContainer, tabContentParams)
+    }
+
+    /** زر تبويب: ينقّل لتبويبه عند الضغط. */
+    private fun tabButton(text: String, index: Int): Button = Button(this).apply {
+        this.text = text
+        textSize = 15f
+        minHeight = dp(48)
+        setPadding(dp(8), 0, dp(8), 0)
+        setOnClickListener { showTab(index) }
+    }
+
+    private fun tabButtonParams(): LinearLayout.LayoutParams =
+        LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+            leftMargin = dp(4)
+            rightMargin = dp(4)
+        }
+
+    private fun styleTabButton(button: Button, selected: Boolean) {
+        button.background = roundedBg(
+            if (selected) 0xFF1B5E4B.toInt() else 0xFF2A2A2A.toInt(),
+            if (selected) 0 else 0xFF444444.toInt(),
+            10,
+        )
+        button.setTextColor(if (selected) 0xFFFFFFFF.toInt() else 0xFFB0B0B0.toInt())
+        button.setTypeface(null, if (selected) Typeface.BOLD else Typeface.NORMAL)
+    }
+
+    /** يُظهر تبويباً واحداً ويخفي الآخرين، ويحدّث شكل شريط التبويبات. */
+    private fun showTab(index: Int) {
+        currentTab = index
+        mainScroll.visibility = if (index == 0) View.VISIBLE else View.GONE
+        chatContainer.visibility = if (index == 1) View.VISIBLE else View.GONE
+        settingsScroll.visibility = if (index == 2) View.VISIBLE else View.GONE
+        styleTabButton(mainTabButton, index == 0)
+        styleTabButton(chatTabButton, index == 1)
+        styleTabButton(settingsTabButton, index == 2)
+        if (index == 1) chatScroll.post { chatScroll.fullScroll(ScrollView.FOCUS_DOWN) }
     }
 
     // ——— عناصر الواجهة الداكنة الرسمية ———
@@ -363,7 +478,7 @@ class MainActivity : Activity() {
         shareButton.isEnabled = !busy && lastDir != null
     }
 
-    /** يعيد رسم أدوار المحادثة (آخر 30 دوراً) في بطاقة المحادثة. */
+    /** يعيد رسم أدوار المحادثة (آخر 30 دوراً) في تبويب المحادثة. */
     private fun renderChat() {
         chatMessagesLayout.removeAllViews()
         val turns = chatSession.turns()
@@ -396,6 +511,7 @@ class MainActivity : Activity() {
                 LinearLayout.LayoutParams.WRAP_CONTENT,
             ).apply { topMargin = dp(6) })
         }
+        chatScroll.post { chatScroll.fullScroll(ScrollView.FOCUS_DOWN) }
     }
 
     /** يرسل رسالة محادثة للنموذج؛ قد يقرأ الكود ليشرح، أو يطلب «نفّذ». */

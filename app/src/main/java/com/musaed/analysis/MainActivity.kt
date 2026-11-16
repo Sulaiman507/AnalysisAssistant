@@ -1,12 +1,15 @@
 package com.musaed.analysis
 
 import android.app.Activity
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.text.InputType
 import android.view.View
@@ -109,10 +112,13 @@ class MainActivity : Activity() {
 
     private var lastDir: File? = null
 
-    // اختيار ملف APK (المرحلة 5): يُنسخ الملف المختار إلى مجلد الملفات
-    // الخارجية للتطبيق — فخدمة MCP (عملية MT Manager) لا تستطيع قراءة
-    // المجلد الداخلي الخاص بالتطبيق، بينما التخزين الخارجي مقروء لها.
-    // الملف المختار يقدَّم على الحزمة المكتوبة في الحقل.
+    // اختيار ملف APK (المرحلة 5، والإصلاح 0.1.15): يُنسخ الملف المختار إلى
+    // مجلد التنزيلات العام عبر MediaStore — لا إلى مجلد التطبيق الخارجي،
+    // لأن سياسة ملفات MCP تمنع قراءة Android/data («Home is read_write
+    // except Android/data») ففتح مساحة العمل من هناك يفشل بـ
+    // FILE_ACCESS_DENIED (ثبت على الجهاز 2026-11-16). التنزيلات خارج
+    // Android/data وداخل Home، فتسمح بها السياسة. الملف المختار يقدَّم
+    // على الحزمة المكتوبة في الحقل.
     private var chosenApkPath: String? = null
     private var chosenApkName: String? = null
     private lateinit var apkFileLabel: TextView
@@ -1090,15 +1096,40 @@ class MainActivity : Activity() {
                     runOnUiThread { statusView.text = getString(R.string.apk_not_apk) }
                     return@thread
                 }
-                // نسخة في التخزين الخارجي للتطبيق — مقروءة لخدمة MCP.
-                val dir = File(getExternalFilesDir(null), "picked-apks").apply { mkdirs() }
+                // النسخة تذهب إلى مجلد التنزيلات العام عبر MediaStore — لا إلى
+                // مجلد التطبيق الخارجي: سياسة ملفات MCP تمنع قراءة Android/data
+                // («Home is read_write except Android/data»)، ففتح مساحة العمل
+                // من هناك يفشل بـ FILE_ACCESS_DENIED (ثبت على الجهاز 2026-11-16).
+                // التنزيلات خارج Android/data وداخل Home، فتسمح بها السياسة.
+                // لا حاجة لإذن تخزين: الكتابة إلى ملف أدخله التطبيق بنفسه عبر
+                // MediaStore مسموحة دون إذن. الاسم ببادئة زمنية لئلا يكرر
+                // MediaStore الاسم عند وجود ملف بالاسم نفسه.
                 val safeName = name.replace(Regex("[^A-Za-z0-9._-]"), "_")
-                val dest = File(dir, "${System.currentTimeMillis()}_$safeName")
-                contentResolver.openInputStream(uri)?.use { input ->
-                    dest.outputStream().use { output -> input.copyTo(output) }
-                } ?: throw IllegalStateException("تعذّر فتح الملف المختار.")
+                val displayName = "${System.currentTimeMillis()}_$safeName"
+                val values = ContentValues().apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, displayName)
+                    put(
+                        MediaStore.MediaColumns.MIME_TYPE,
+                        "application/vnd.android.package-archive",
+                    )
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                }
+                val destUri = contentResolver.insert(
+                    MediaStore.Downloads.EXTERNAL_CONTENT_URI, values,
+                ) ?: throw IllegalStateException("تعذّر إنشاء نسخة في التنزيلات.")
+                contentResolver.openOutputStream(destUri)?.use { output ->
+                    contentResolver.openInputStream(uri)?.use { input ->
+                        input.copyTo(output)
+                    } ?: throw IllegalStateException("تعذّر فتح الملف المختار.")
+                } ?: throw IllegalStateException("تعذّر الكتابة في نسخة التنزيلات.")
+                // المسار المطلق للملف في مجلد التنزيلات العام — هو ما يُمرَّر
+                // إلى workspace_open (خدمة MCP تقرأه من هناك).
+                val downloadsDir = Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_DOWNLOADS,
+                ).absolutePath
+                val destPath = "$downloadsDir/$displayName"
                 runOnUiThread {
-                    chosenApkPath = dest.absolutePath
+                    chosenApkPath = destPath
                     chosenApkName = name
                     apkFileLabel.text = getString(R.string.apk_chosen, name)
                     statusView.text = getString(R.string.apk_copied, name)

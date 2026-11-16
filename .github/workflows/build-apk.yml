@@ -21,7 +21,7 @@
 #
 # What it runs, in order:
 #   - :mcp:test — the MCP module unit tests (18 test classes, 92 tests).
-#   - assembleDebug — the debug APK (versionCode 15, 0.1.14-phase5).
+#   - assembleDebug — the debug APK (versionCode 16, 0.1.15-picker-download).
 # The live MT-tool-name check (tools/verify-local.sh step 1) does NOT run
 # here: it needs the live tools list file, which is not in the repo. That
 # check still runs locally before a release build.

@@ -552,6 +552,8 @@ class MainActivity : Activity() {
                     if (outcome is ChatOutcome.RunAnalysis) {
                         statusView.text = getString(R.string.chat_run_started)
                         runAnalysis(outcome.instructions)
+                    } else {
+                        statusView.text = getString(R.string.chat_answered)
                     }
                 }
             } catch (e: McpException) {

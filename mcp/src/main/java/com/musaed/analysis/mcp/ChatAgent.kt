@@ -24,6 +24,9 @@ sealed interface ChatOutcome {
  * ضمانات:
  *  - القائمة البيضاء فقط: أي أداة خارج ChatPrompt.WHITELIST تُرفض
  *    محلياً دون الوصول للخادم — المحادثة قراءة فقط، لا تعديل أبداً.
+ *  - أدوات الفتح (SETUP_TOOLS) تُرسل بمعاملات النموذج كما هي، بلا
+ *    حقن workspaceId/editSessionId — هاتان الأداتان لا تقبلانهما.
+ *    أما أدوات القراءة فيُحقن لها المعرفان عند غيابهما.
  *  - مساحة العمل تُفتح عند أول أداة تحتاجها فقط، وللهدف نفسه فقط —
  *    بلا تجاوز لتطبيق آخر.
  *  - عدد استدعاءات النموذج لكل رسالة محدود (maxToolSteps + 1) حتى لا
@@ -43,7 +46,17 @@ class ChatAgent(
         const val DEFAULT_MAX_TOOL_STEPS = 5
         const val MAX_TOOL_RESULT_CHARS = 4000
         const val TOOL_LIST_INSTALLED = "mt_apk_list_installed_apps"
+        const val TOOL_LIST_AVAILABLE = "mt_apk_list_available_apks"
         const val TOOL_WORKSPACE_OPEN = "mt_apk_workspace_open"
+
+        /**
+         * أدوات الفتح: تعمل بلا مساحة عمل ولا تقبل workspaceId ولا
+         * editSessionId — تُرسل كما أرسلها النموذج (وتُحذف منهما إن
+         * أرسلهما)، وإلا رفضها الخادم بـ INVALID_ARGUMENT. إصلاح
+         * 2026-11-16: الحقن السابق هنا كان يفسد كل استدعاءات النموذج
+         * الأولى لأن برومبت المحادثة يأمره بهاتين الأداتين أولاً.
+         */
+        val SETUP_TOOLS = setOf(TOOL_LIST_INSTALLED, TOOL_LIST_AVAILABLE, TOOL_WORKSPACE_OPEN)
     }
 
     private var workspaceId: String? = null
@@ -95,20 +108,36 @@ class ChatAgent(
                     }
                     toolSteps++
                     onStep("قراءة الكود: ${parsed.tool}…")
-                    val workspace = ensureWorkspace()
-                    if (workspace == null) {
-                        messages += ChatMessage(
-                            "user",
-                            "لم يُحدد تطبيق هدف بعد — اسأل المستخدم عن اسم حزمة التطبيق " +
-                                "ليكتبه في حقل الهدف أولاً، ثم أعد المحاولة.",
-                        )
-                        continue
-                    }
                     val args = parsed.arguments.deepCopy()
-                    if (!args.has("workspaceId")) args.addProperty("workspaceId", workspace)
-                    if (!args.has("editSessionId")) args.addProperty("editSessionId", "")
+                    if (parsed.tool in SETUP_TOOLS) {
+                        // أدوات الفتح تعمل بلا مساحة عمل ولا تقبل هذين
+                        // المعاملين — تُرسل كما أرسلها النموذج، وتُحذف
+                        // منهما إن أرسلهما هو نفسه خطأً.
+                        args.remove("workspaceId")
+                        args.remove("editSessionId")
+                    } else {
+                        val workspace = ensureWorkspace()
+                        if (workspace == null) {
+                            messages += ChatMessage(
+                                "user",
+                                "لم يُحدد تطبيق هدف بعد — اسأل المستخدم عن اسم حزمة التطبيق " +
+                                    "ليكتبه في حقل الهدف أولاً، ثم أعد المحاولة.",
+                            )
+                            continue
+                        }
+                        if (!args.has("workspaceId")) args.addProperty("workspaceId", workspace)
+                        if (!args.has("editSessionId")) args.addProperty("editSessionId", "")
+                    }
                     val result = try {
-                        runner.call(parsed.tool, args, step = 0)
+                        val r = runner.call(parsed.tool, args, step = 0)
+                        // إن فتح النموذج مساحة العمل بنفسه، يُحفظ معرّفها
+                        // فيُعاد استخدامه لأدوات القراءة بدل فتح ثانية.
+                        if (parsed.tool == TOOL_WORKSPACE_OPEN) {
+                            McpResults.firstString(
+                                McpResults.dataOf(r), "workspaceId", "workspace_id", "id",
+                            )?.takeIf { it.isNotBlank() }?.let { workspaceId = it }
+                        }
+                        r
                     } catch (e: McpException) {
                         val detail = McpResults.serverErrorText(e.rawResult)
                             ?: (e.message ?: e.toString())

@@ -126,4 +126,53 @@ class ChatAgentTest {
         assertTrue(outcome is ChatOutcome.Answer)
         assertTrue((outcome as ChatOutcome.Answer).text.contains("تعذّر الوصول إلى النموذج"))
     }
+
+    @Test
+    fun `model list call is sent without injected workspace args`() {
+        val listAction =
+            """{"tool": "mt_apk_list_installed_apps", "arguments": {"query": "com.musaed.test.clear", "appType": "user", "limit": 50}}"""
+        val model = FakeModel(listOf(listAction, "وجدت التطبيق مثبّتاً."))
+        val (agent, _, server) = makeAgent(model)
+        val session = ChatSession()
+        val outcome = agent.respond(session, "هل التطبيق مثبّت؟")
+        assertTrue(outcome is ChatOutcome.Answer)
+        val call = server.calls.single { it.first == "mt_apk_list_installed_apps" }
+        assertTrue(!call.second.has("workspaceId"))
+        assertTrue(!call.second.has("editSessionId"))
+        // أداة الفتح لا تفتح مساحة عمل داخلية مسبقاً
+        assertTrue(server.calls.none { it.first == "mt_apk_workspace_open" })
+    }
+
+    @Test
+    fun `model workspace_open call is sent as-is and its id is reused`() {
+        val openAction =
+            """{"tool": "mt_apk_workspace_open", "arguments": {"path": "mt://installed-app/com.musaed.test.clear", "temporary": true}}"""
+        val model = FakeModel(listOf(openAction, outlineAction, "الكلاس a فيه دالة a."))
+        val (agent, _, server) = makeAgent(model)
+        val session = ChatSession()
+        val outcome = agent.respond(session, "وش في الكلاس a؟")
+        assertTrue(outcome is ChatOutcome.Answer)
+        val open = server.calls.single { it.first == "mt_apk_workspace_open" }
+        assertTrue(!open.second.has("workspaceId"))
+        assertTrue(!open.second.has("editSessionId"))
+        // أداة القراءة التالية تستخدم معرّف مساحة العمل المفتوحة، بلا فتح ثانٍ
+        val outlineCall = server.calls.single { it.first == "mt_apk_dex_read_class_outline" }
+        assertEquals("ws-1", outlineCall.second.get("workspaceId").asString)
+        assertTrue(outlineCall.second.has("editSessionId"))
+    }
+
+    @Test
+    fun `workspace args the model sends to a setup tool are stripped`() {
+        val openAction =
+            """{"tool": "mt_apk_workspace_open", "arguments": {"workspaceId": "ws-9", "editSessionId": "x", "path": "mt://installed-app/com.musaed.test.clear", "temporary": true}}"""
+        val model = FakeModel(listOf(openAction, "فُتحت مساحة العمل."))
+        val (agent, _, server) = makeAgent(model)
+        val session = ChatSession()
+        val outcome = agent.respond(session, "افتح التطبيق")
+        assertTrue(outcome is ChatOutcome.Answer)
+        val open = server.calls.single { it.first == "mt_apk_workspace_open" }
+        assertTrue(!open.second.has("workspaceId"))
+        assertTrue(!open.second.has("editSessionId"))
+        assertEquals("mt://installed-app/com.musaed.test.clear", open.second.get("path").asString)
+    }
 }

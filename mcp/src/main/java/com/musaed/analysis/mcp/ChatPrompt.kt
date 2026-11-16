@@ -39,7 +39,8 @@ object ChatPrompt {
     /** نص الدليل المختصر كما يُرسل للنموذج — أسماء ومعاملات حرفية. */
     val TOOL_CATALOG_TEXT: String = """
         الأدوات المتاحة (قراءة فقط — لا تعديل ولا بناء ولا تثبيت ولا حذف):
-        كل استدعاء يحتاج workspaceId (معرّف مساحة العمل) وeditSessionId (سلسلة فارغة "").
+        أدوات القراءة (4–14) تحتاج workspaceId (معرّف مساحة العمل) وeditSessionId (سلسلة فارغة "").
+        أما أدوات الفتح (1–3) فتعمل بلا مساحة عمل ولا تقبل هذين المعاملين إطلاقاً — أرسلها بمعاملاتها كما في الأمثلة فقط.
         صيغ المعرفات (locator): كلاس "dex_class:com/foo/Bar;" — دالة "dex_method:com/foo/Bar;->name(Landroid/content/Context;)Z" — المانيفست "axml:AndroidManifest.xml".
         1) mt_apk_list_installed_apps — ابحث عن تطبيق مثبّت: {"query": "com.example.app", "appType": "user", "limit": 50}
         2) mt_apk_list_available_apks — اسرد ملفات APK المتاحة: {"prefix": "", "limit": 50}

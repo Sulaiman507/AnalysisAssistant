@@ -114,12 +114,13 @@ class MainActivity : Activity() {
 
     private var lastDir: File? = null
 
-    // اختيار ملف APK (المرحلة 5، والإصلاح 0.1.15): يُنسخ الملف المختار إلى
-    // مجلد التنزيلات العام عبر MediaStore — لا إلى مجلد التطبيق الخارجي،
-    // لأن سياسة ملفات MCP تمنع قراءة Android/data («Home is read_write
-    // except Android/data») ففتح مساحة العمل من هناك يفشل بـ
-    // FILE_ACCESS_DENIED (ثبت على الجهاز 2026-11-16). التنزيلات خارج
-    // Android/data وداخل Home، فتسمح بها السياسة. الملف المختار يقدَّم
+    // اختيار ملف APK (المرحلة 5، والإصلاحان 0.1.15 و0.1.17): يُنسخ الملف
+    // المختار إلى مجلد Home الخاص بخدمة MCP — «Download/edit-apps» — عبر
+    // MediaStore. الدليل: تشخيص 2026-11-16 (policy_diag.txt) أظهر أن
+    // homePath = /storage/emulated/0/Download/edit-apps، وأن القاعدة الوحيدة
+    // هي path "/" بوصول deny — أي أن كل شيء خارج Home مرفوض. لهذا فشلت
+    // النسخة في مجلد التطبيق الخارجي (Android/data) في 0.1.14 والنسخة في
+    // التنزيلات نفسها في 0.1.15: كلتاهما خارج Home. الملف المختار يقدَّم
     // على الحزمة المكتوبة في الحقل.
     private var chosenApkPath: String? = null
     private var chosenApkName: String? = null
@@ -1157,14 +1158,15 @@ class MainActivity : Activity() {
                     runOnUiThread { statusView.text = getString(R.string.apk_not_apk) }
                     return@thread
                 }
-                // النسخة تذهب إلى مجلد التنزيلات العام عبر MediaStore — لا إلى
-                // مجلد التطبيق الخارجي: سياسة ملفات MCP تمنع قراءة Android/data
-                // («Home is read_write except Android/data»)، ففتح مساحة العمل
-                // من هناك يفشل بـ FILE_ACCESS_DENIED (ثبت على الجهاز 2026-11-16).
-                // التنزيلات خارج Android/data وداخل Home، فتسمح بها السياسة.
-                // لا حاجة لإذن تخزين: الكتابة إلى ملف أدخله التطبيق بنفسه عبر
-                // MediaStore مسموحة دون إذن. الاسم ببادئة زمنية لئلا يكرر
-                // MediaStore الاسم عند وجود ملف بالاسم نفسه.
+                // النسخة تذهب إلى مجلد Home الخاص بخدمة MCP — «Download/edit-apps»
+                // — عبر MediaStore (مجلد فرعي تحت التنزيلات، فينشئه MediaStore
+                // إن لم يكن موجوداً؛ وهو موجود أصلاً وفيه ملفات APK). الدليل من
+                // تشخيص 2026-11-16: homePath = /storage/emulated/0/Download/edit-apps
+                // والقاعدة الوحيدة path "/" بوصول deny — فكل شيء خارج Home مرفوض،
+                // ولهذا فشلت النسخة في Android/data (0.1.14) وفي التنزيلات نفسها
+                // (0.1.15). لا حاجة لإذن تخزين: الكتابة إلى ملف أدخله التطبيق
+                // بنفسه عبر MediaStore مسموحة دون إذن. الاسم ببادئة زمنية لئلا
+                // يكرر MediaStore الاسم عند وجود ملف بالاسم نفسه.
                 val safeName = name.replace(Regex("[^A-Za-z0-9._-]"), "_")
                 val displayName = "${System.currentTimeMillis()}_$safeName"
                 val values = ContentValues().apply {
@@ -1173,7 +1175,10 @@ class MainActivity : Activity() {
                         MediaStore.MediaColumns.MIME_TYPE,
                         "application/vnd.android.package-archive",
                     )
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS)
+                    put(
+                        MediaStore.MediaColumns.RELATIVE_PATH,
+                        Environment.DIRECTORY_DOWNLOADS + "/edit-apps",
+                    )
                 }
                 val destUri = contentResolver.insert(
                     MediaStore.Downloads.EXTERNAL_CONTENT_URI, values,
@@ -1183,12 +1188,12 @@ class MainActivity : Activity() {
                         input.copyTo(output)
                     } ?: throw IllegalStateException("تعذّر فتح الملف المختار.")
                 } ?: throw IllegalStateException("تعذّر الكتابة في نسخة التنزيلات.")
-                // المسار المطلق للملف في مجلد التنزيلات العام — هو ما يُمرَّر
-                // إلى workspace_open (خدمة MCP تقرأه من هناك).
+                // المسار المطلق للملف داخل Home — هو ما يُمرَّر إلى workspace_open
+                // (خدمة MCP تقرأه من هناك).
                 val downloadsDir = Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_DOWNLOADS,
                 ).absolutePath
-                val destPath = "$downloadsDir/$displayName"
+                val destPath = "$downloadsDir/edit-apps/$displayName"
                 runOnUiThread {
                     chosenApkPath = destPath
                     chosenApkName = name

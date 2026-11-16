@@ -85,7 +85,7 @@ sed -e 's|<manifest xmlns:android="http://schemas.android.com/apk/res/android">|
 "$BT/aapt2" link -o "$WORK/unsigned.apk" -I "$ANDROID_JAR" \
   --manifest "$WORK/AndroidManifest.xml" \
   --min-sdk-version 26 --target-sdk-version 36 \
-  --version-code 17 --version-name 0.1.16-diag \
+  --version-code 18 --version-name 0.1.17-picker-home \
   --java "$WORK/generated" \
   "$WORK/res.zip"
 "$KOTLINC" -jvm-target 17 \

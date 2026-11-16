@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.text.InputType
 import android.view.View
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -80,6 +81,14 @@ class MainActivity : Activity() {
     private var chatSession = ChatSession()
     private var chatLog = SessionLog()
     private var lastReportJson: String? = null
+
+    // حد خطوات قراءة المحادثة: يُحفظ في الجهاز، الافتراضي 5،
+    // وبلا حد = Int.MAX_VALUE (يختاره المستخدم من تبويب الإعدادات).
+    private lateinit var chatLimitInput: EditText
+    private lateinit var chatUnlimitedCheck: CheckBox
+    private lateinit var chatLimitSaveButton: Button
+    private lateinit var chatLimitStatus: TextView
+    private var chatMaxToolSteps: Int = ChatAgent.DEFAULT_MAX_TOOL_STEPS
 
     private var lastDir: File? = null
 
@@ -238,6 +247,41 @@ class MainActivity : Activity() {
         settingsCard.addView(settingsStatus)
         addCard(settingsContent, settingsCard)
 
+        // بطاقة إعدادات المحادثة — حد خطوات القراءة في كل رسالة
+        val chatSettingsCard = sectionCard()
+        chatSettingsCard.addView(sectionTitle(getString(R.string.chat_settings_title)))
+        chatSettingsCard.addView(fieldLabel(getString(R.string.chat_limit_label)))
+        chatLimitInput = styledField(getString(R.string.chat_limit_hint)).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER
+        }
+        chatSettingsCard.addView(chatLimitInput)
+        chatUnlimitedCheck = CheckBox(this).apply {
+            text = getString(R.string.chat_unlimited)
+            textSize = 15f
+            setTextColor(0xFFF5F5F5.toInt())
+            setOnCheckedChangeListener { _, checked ->
+                chatLimitInput.isEnabled = !checked
+            }
+        }
+        chatSettingsCard.addView(chatUnlimitedCheck)
+        chatSettingsCard.addView(TextView(this).apply {
+            text = getString(R.string.chat_limit_warning)
+            textSize = 13f
+            setTextColor(0xFFB0B0B0.toInt())
+            setPadding(0, dp(4), 0, 0)
+        })
+        chatLimitSaveButton = styledButton(getString(R.string.chat_limit_save), false).apply {
+            setOnClickListener { saveChatLimit() }
+        }
+        chatSettingsCard.addView(chatLimitSaveButton, fullWidthParams())
+        chatLimitStatus = TextView(this).apply {
+            textSize = 14f
+            setTextColor(0xFFB0B0B0.toInt())
+            setPadding(0, dp(8), 0, 0)
+        }
+        chatSettingsCard.addView(chatLimitStatus)
+        addCard(settingsContent, chatSettingsCard)
+
         // بطاقة النتائج
         val resultsCard = sectionCard()
         val resultsHeader = LinearLayout(this).apply {
@@ -266,6 +310,7 @@ class MainActivity : Activity() {
 
         setContentView(root)
         loadProviderSettings()
+        loadChatLimit()
         chatSession = ChatStore.load(mcpDir())
         renderChat()
         showTab(0)
@@ -472,6 +517,7 @@ class MainActivity : Activity() {
         analysisButton.isEnabled = !busy
         fetchModelsButton.isEnabled = !busy
         saveSettingsButton.isEnabled = !busy
+        chatLimitSaveButton.isEnabled = !busy
         chatSendButton.isEnabled = !busy
         chatRunButton.isEnabled = !busy
         chatClearButton.isEnabled = !busy
@@ -538,6 +584,7 @@ class MainActivity : Activity() {
                 val agent = ChatAgent(
                     model::chat, runner, target,
                     lastReportJson?.take(2000),
+                    maxToolSteps = chatMaxToolSteps,
                 )
                 val outcome = agent.respond(chatSession, text) { step ->
                     runOnUiThread { statusView.text = step }
@@ -749,6 +796,41 @@ class MainActivity : Activity() {
                     Toast.makeText(this, R.string.no_log_yet, Toast.LENGTH_SHORT).show()
                 }
             }
+        }
+    }
+
+    /** حد خطوات القراءة: يُحفظ كعدد صحيح؛ Int.MAX_VALUE = بلا حد. */
+    private fun loadChatLimit() {
+        chatMaxToolSteps = getSharedPreferences("musaed_analysis", Context.MODE_PRIVATE)
+            .getInt("chat_max_tool_steps", ChatAgent.DEFAULT_MAX_TOOL_STEPS)
+        fillChatLimitFields()
+    }
+
+    private fun fillChatLimitFields() {
+        val unlimited = chatMaxToolSteps == Int.MAX_VALUE
+        chatUnlimitedCheck.isChecked = unlimited
+        chatLimitInput.isEnabled = !unlimited
+        chatLimitInput.setText(if (unlimited) "" else chatMaxToolSteps.toString())
+    }
+
+    /** يحفظ حد خطوات القراءة في الجهاز فقط (1–100، أو بلا حد). */
+    private fun saveChatLimit() {
+        chatMaxToolSteps = if (chatUnlimitedCheck.isChecked) {
+            Int.MAX_VALUE
+        } else {
+            val n = chatLimitInput.text.toString().trim().toIntOrNull()
+                ?: ChatAgent.DEFAULT_MAX_TOOL_STEPS
+            n.coerceIn(1, 100)
+        }
+        getSharedPreferences("musaed_analysis", Context.MODE_PRIVATE)
+            .edit()
+            .putInt("chat_max_tool_steps", chatMaxToolSteps)
+            .apply()
+        fillChatLimitFields()
+        chatLimitStatus.text = if (chatMaxToolSteps == Int.MAX_VALUE) {
+            getString(R.string.chat_limit_saved_unlimited)
+        } else {
+            getString(R.string.chat_limit_saved, chatMaxToolSteps)
         }
     }
 

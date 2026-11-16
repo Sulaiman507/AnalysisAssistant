@@ -32,11 +32,12 @@ class ChatAgentTest {
     private fun makeAgent(
         model: FakeModel,
         target: String? = "com.musaed.test.clear",
+        maxToolSteps: Int = ChatAgent.DEFAULT_MAX_TOOL_STEPS,
     ): Triple<ChatAgent, SessionLog, FakeServer> {
         val server = chatServer()
         val log = SessionLog()
         val runner = ToolRunner(server::call, log, timeoutMs = 5_000)
-        val agent = ChatAgent(model::chat, runner, target, null)
+        val agent = ChatAgent(model::chat, runner, target, null, maxToolSteps = maxToolSteps)
         return Triple(agent, log, server)
     }
 
@@ -174,5 +175,27 @@ class ChatAgentTest {
         assertTrue(!open.second.has("workspaceId"))
         assertTrue(!open.second.has("editSessionId"))
         assertEquals("mt://installed-app/com.musaed.test.clear", open.second.get("path").asString)
+    }
+
+    @Test
+    fun `unlimited steps let the model call many tools then answer`() {
+        val model = FakeModel(List(8) { outlineAction } + "الكلاس a فيه دالة a.")
+        val (agent, _, server) = makeAgent(model, maxToolSteps = Int.MAX_VALUE)
+        val session = ChatSession()
+        val outcome = agent.respond(session, "اشرح كل شيء")
+        assertTrue(outcome is ChatOutcome.Answer)
+        assertTrue((outcome as ChatOutcome.Answer).text.contains("دالة"))
+        assertEquals(8, server.calls.count { it.first == "mt_apk_dex_read_class_outline" })
+    }
+
+    @Test
+    fun `custom limit of two stops after two tool calls`() {
+        val model = FakeModel(List(5) { outlineAction })
+        val (agent, _, server) = makeAgent(model, maxToolSteps = 2)
+        val session = ChatSession()
+        val outcome = agent.respond(session, "اشرح كل شيء")
+        assertTrue(outcome is ChatOutcome.Answer)
+        assertTrue((outcome as ChatOutcome.Answer).text.contains("حد خطوات القراءة"))
+        assertEquals(2, server.calls.count { it.first == "mt_apk_dex_read_class_outline" })
     }
 }

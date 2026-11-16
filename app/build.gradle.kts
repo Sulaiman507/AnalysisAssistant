@@ -12,8 +12,8 @@ android {
         applicationId = "com.musaed.analysis"
         minSdk = 26
         targetSdk = 36
-        versionCode = 10
-        versionName = "0.1.9-chat-fix"
+        versionCode = 11
+        versionName = "0.1.10-chat-limit"
     }
 
     buildTypes {

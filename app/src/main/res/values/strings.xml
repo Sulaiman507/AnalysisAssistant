@@ -65,6 +65,14 @@
     <string name="chat_model">النموذج</string>
     <string name="chat_run_started">أبدأ التحليل الكامل بتعليمات المحادثة…</string>
     <string name="chat_answered">تم الرد ✓ — اسأل سؤالاً آخر أو قل «نفّذ»</string>
+    <string name="chat_settings_title">إعدادات المحادثة</string>
+    <string name="chat_limit_label">حد خطوات القراءة في كل رسالة</string>
+    <string name="chat_limit_hint">مثال: 5</string>
+    <string name="chat_unlimited">غير محدود</string>
+    <string name="chat_limit_warning">بلا حد قد يستمر النموذج باستدعاء الأدوات ويستهلك رصيدك إن ارتبك — استخدمه بحذر.</string>
+    <string name="chat_limit_save">حفظ الحد</string>
+    <string name="chat_limit_saved">حُفظ الحد: %1$d خطوات قراءة في كل رسالة</string>
+    <string name="chat_limit_saved_unlimited">حُفظ الحد: غير محدود — انتبه لاستهلاك الرصيد</string>
     <string name="tab_main">الرئيسية</string>
     <string name="tab_chat">المحادثة</string>
     <string name="tab_settings">الإعدادات</string>

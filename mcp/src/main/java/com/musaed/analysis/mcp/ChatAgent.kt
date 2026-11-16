@@ -30,7 +30,8 @@ sealed interface ChatOutcome {
  *  - مساحة العمل تُفتح عند أول أداة تحتاجها فقط، وللهدف نفسه فقط —
  *    بلا تجاوز لتطبيق آخر.
  *  - عدد استدعاءات النموذج لكل رسالة محدود (maxToolSteps + 1) حتى لا
- *    تدور المحادثة بلا نهاية على حساب رصيد المستخدم.
+ *    تدور المحادثة بلا نهاية على حساب رصيد المستخدم — وmaxToolSteps
+ *    قابل للتعديل من إعدادات المحادثة (Int.MAX_VALUE = بلا حد).
  *  - نتائج الأدوات تُقتطع عند 4000 حرف في رسائل النموذج (الكامل يبقى
  *    في سجل المحادثة) حتى لا يمتلئ سياقه.
  */
@@ -67,7 +68,10 @@ class ChatAgent(
         messages += session.historyForModel()
 
         var toolSteps = 0
-        for (attempt in 1..maxToolSteps + 1) {
+        // بلا حد = Int.MAX_VALUE: لا تُحسب +1 هنا (تفيض إلى سالب فيفقد
+        // الحلقة) — والحد نفسه لا يُبلغ أبداً فلا حاجة لرسالة السقف.
+        val maxAttempts = if (maxToolSteps == Int.MAX_VALUE) Int.MAX_VALUE else maxToolSteps + 1
+        for (attempt in 1..maxAttempts) {
             onStep("النموذج يفكّر…")
             val reply = try {
                 chat(messages)

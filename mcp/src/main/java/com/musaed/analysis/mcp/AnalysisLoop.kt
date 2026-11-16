@@ -35,18 +35,22 @@ class AnalysisLoop(
     private val runner: ToolRunner,
     private val log: SessionLog,
     private val systemPrompt: String,
-    private val maxSteps: Int = 40,
+    private val maxSteps: Int = DEFAULT_MAX_STEPS,
     /** دليل الأدوات المرسل للنموذج — الأسماء والمعاملات الحرفية (ToolCatalog). */
     private val toolCatalog: String = ToolCatalog.TEXT,
 ) {
     companion object {
-        const val DEFAULT_MAX_STEPS = 40
+        const val DEFAULT_MAX_STEPS = 80
         const val MAX_TOOL_RESULT_CHARS = 6000
         private const val MAX_CONSECUTIVE_ERRORS = 3
 
         private const val TOOL_LIST_INSTALLED = "mt_apk_list_installed_apps"
         private const val TOOL_WORKSPACE_OPEN = "mt_apk_workspace_open"
     }
+
+    /** نص الخطوة المعروض: بلا حد يُعرض «بلا حد» بدل الرقم الكبير. */
+    private fun stepLabel(stepsUsed: Int): String =
+        if (maxSteps == Int.MAX_VALUE) "خطوة $stepsUsed (بلا حد)" else "خطوة $stepsUsed/$maxSteps"
 
     fun run(
         targetPackage: String,
@@ -88,7 +92,7 @@ class AnalysisLoop(
         var consecutiveMalformed = 0
         while (stepsUsed < maxSteps) {
             stepsUsed++
-            onStep("خطوة $stepsUsed/$maxSteps: استدعاء النموذج…")
+            onStep("${stepLabel(stepsUsed)}: استدعاء النموذج…")
             val reply = try {
                 chat(messages)
             } catch (e: Exception) {
@@ -139,7 +143,7 @@ class AnalysisLoop(
                         )
                         continue
                     }
-                    onStep("خطوة $stepsUsed/$maxSteps: ${action.tool}…")
+                    onStep("${stepLabel(stepsUsed)}: ${action.tool}…")
                     val result = try {
                         runner.call(action.tool, action.arguments, step = stepsUsed)
                     } catch (e: McpException) {

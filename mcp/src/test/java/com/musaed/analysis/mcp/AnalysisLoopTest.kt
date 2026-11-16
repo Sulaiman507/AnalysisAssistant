@@ -126,6 +126,21 @@ class AnalysisLoopTest {
     }
 
     @Test
+    fun `default cap is eighty`() {
+        assertEquals(80, AnalysisLoop.DEFAULT_MAX_STEPS)
+    }
+
+    @Test
+    fun `unlimited steps let the loop run past forty and finish`() {
+        val model = FakeModel(List(45) { outlineAction } + finalReport)
+        val (loop, _) = makeLoop(model, maxSteps = Int.MAX_VALUE)
+        val result = loop.run("com.musaed.test.clear")
+        assertTrue(result.success)
+        assertEquals(46, result.stepsUsed)
+        assertTrue(result.reportJson!!.contains("PremiumGate"))
+    }
+
+    @Test
     fun `parses fenced json and name alias`() {
         val model = FakeModel(emptyList())
         val (loop, _) = makeLoop(model)

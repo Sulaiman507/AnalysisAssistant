@@ -90,6 +90,14 @@ class MainActivity : Activity() {
     private lateinit var chatLimitStatus: TextView
     private var chatMaxToolSteps: Int = ChatAgent.DEFAULT_MAX_TOOL_STEPS
 
+    // حد خطوات التحليل الكامل: يُحفظ في الجهاز، الافتراضي 80،
+    // وبلا حد = Int.MAX_VALUE (يختاره المستخدم من تبويب الإعدادات).
+    private lateinit var analysisLimitInput: EditText
+    private lateinit var analysisUnlimitedCheck: CheckBox
+    private lateinit var analysisLimitSaveButton: Button
+    private lateinit var analysisLimitStatus: TextView
+    private var analysisMaxSteps: Int = AnalysisLoop.DEFAULT_MAX_STEPS
+
     private var lastDir: File? = null
 
     // التبويبات الثلاثة: الرئيسية (الهدف + الإجراءات + النتائج)، المحادثة،
@@ -282,6 +290,41 @@ class MainActivity : Activity() {
         chatSettingsCard.addView(chatLimitStatus)
         addCard(settingsContent, chatSettingsCard)
 
+        // بطاقة إعدادات التحليل — حد خطوات التحليل الكامل
+        val analysisSettingsCard = sectionCard()
+        analysisSettingsCard.addView(sectionTitle(getString(R.string.analysis_settings_title)))
+        analysisSettingsCard.addView(fieldLabel(getString(R.string.analysis_limit_label)))
+        analysisLimitInput = styledField(getString(R.string.analysis_limit_hint)).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER
+        }
+        analysisSettingsCard.addView(analysisLimitInput)
+        analysisUnlimitedCheck = CheckBox(this).apply {
+            text = getString(R.string.analysis_unlimited)
+            textSize = 15f
+            setTextColor(0xFFF5F5F5.toInt())
+            setOnCheckedChangeListener { _, checked ->
+                analysisLimitInput.isEnabled = !checked
+            }
+        }
+        analysisSettingsCard.addView(analysisUnlimitedCheck)
+        analysisSettingsCard.addView(TextView(this).apply {
+            text = getString(R.string.analysis_limit_warning)
+            textSize = 13f
+            setTextColor(0xFFB0B0B0.toInt())
+            setPadding(0, dp(4), 0, 0)
+        })
+        analysisLimitSaveButton = styledButton(getString(R.string.analysis_limit_save), false).apply {
+            setOnClickListener { saveAnalysisLimit() }
+        }
+        analysisSettingsCard.addView(analysisLimitSaveButton, fullWidthParams())
+        analysisLimitStatus = TextView(this).apply {
+            textSize = 14f
+            setTextColor(0xFFB0B0B0.toInt())
+            setPadding(0, dp(8), 0, 0)
+        }
+        analysisSettingsCard.addView(analysisLimitStatus)
+        addCard(settingsContent, analysisSettingsCard)
+
         // بطاقة النتائج
         val resultsCard = sectionCard()
         val resultsHeader = LinearLayout(this).apply {
@@ -311,6 +354,7 @@ class MainActivity : Activity() {
         setContentView(root)
         loadProviderSettings()
         loadChatLimit()
+        loadAnalysisLimit()
         chatSession = ChatStore.load(mcpDir())
         renderChat()
         showTab(0)
@@ -518,6 +562,7 @@ class MainActivity : Activity() {
         fetchModelsButton.isEnabled = !busy
         saveSettingsButton.isEnabled = !busy
         chatLimitSaveButton.isEnabled = !busy
+        analysisLimitSaveButton.isEnabled = !busy
         chatSendButton.isEnabled = !busy
         chatRunButton.isEnabled = !busy
         chatClearButton.isEnabled = !busy
@@ -799,6 +844,41 @@ class MainActivity : Activity() {
         }
     }
 
+    /** حد خطوات التحليل: يُحفظ كعدد صحيح؛ Int.MAX_VALUE = بلا حد. */
+    private fun loadAnalysisLimit() {
+        analysisMaxSteps = getSharedPreferences("musaed_analysis", Context.MODE_PRIVATE)
+            .getInt("analysis_max_steps", AnalysisLoop.DEFAULT_MAX_STEPS)
+        fillAnalysisLimitFields()
+    }
+
+    private fun fillAnalysisLimitFields() {
+        val unlimited = analysisMaxSteps == Int.MAX_VALUE
+        analysisUnlimitedCheck.isChecked = unlimited
+        analysisLimitInput.isEnabled = !unlimited
+        analysisLimitInput.setText(if (unlimited) "" else analysisMaxSteps.toString())
+    }
+
+    /** يحفظ حد خطوات التحليل في الجهاز فقط (1–200، أو بلا حد). */
+    private fun saveAnalysisLimit() {
+        analysisMaxSteps = if (analysisUnlimitedCheck.isChecked) {
+            Int.MAX_VALUE
+        } else {
+            val n = analysisLimitInput.text.toString().trim().toIntOrNull()
+                ?: AnalysisLoop.DEFAULT_MAX_STEPS
+            n.coerceIn(1, 200)
+        }
+        getSharedPreferences("musaed_analysis", Context.MODE_PRIVATE)
+            .edit()
+            .putInt("analysis_max_steps", analysisMaxSteps)
+            .apply()
+        fillAnalysisLimitFields()
+        analysisLimitStatus.text = if (analysisMaxSteps == Int.MAX_VALUE) {
+            getString(R.string.analysis_limit_saved_unlimited)
+        } else {
+            getString(R.string.analysis_limit_saved, analysisMaxSteps)
+        }
+    }
+
     /** حد خطوات القراءة: يُحفظ كعدد صحيح؛ Int.MAX_VALUE = بلا حد. */
     private fun loadChatLimit() {
         chatMaxToolSteps = getSharedPreferences("musaed_analysis", Context.MODE_PRIVATE)
@@ -936,7 +1016,7 @@ class MainActivity : Activity() {
             try {
                 client.connect()
                 val model = ModelClient(settings.toModelConfig())
-                val loop = AnalysisLoop(model::chat, runner, log, SystemPrompt.TEXT)
+                val loop = AnalysisLoop(model::chat, runner, log, SystemPrompt.TEXT, maxSteps = analysisMaxSteps)
                 val result = loop.run(target, userInstructions) { step ->
                     runOnUiThread { statusView.text = step }
                 }

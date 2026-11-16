@@ -73,6 +73,14 @@
     <string name="chat_limit_save">حفظ الحد</string>
     <string name="chat_limit_saved">حُفظ الحد: %1$d خطوات قراءة في كل رسالة</string>
     <string name="chat_limit_saved_unlimited">حُفظ الحد: غير محدود — انتبه لاستهلاك الرصيد</string>
+    <string name="analysis_settings_title">إعدادات التحليل</string>
+    <string name="analysis_limit_label">حد خطوات التحليل الكامل</string>
+    <string name="analysis_limit_hint">مثال: 80</string>
+    <string name="analysis_unlimited">غير محدود</string>
+    <string name="analysis_limit_warning">التحليل الكامل يستهلك وقتاً ورصيداً أكثر مع كل خطوة — بلا حد قد يستمر النموذج طويلاً إن ارتبك.</string>
+    <string name="analysis_limit_save">حفظ الحد</string>
+    <string name="analysis_limit_saved">حُفظ الحد: %1$d خطوات تحليل</string>
+    <string name="analysis_limit_saved_unlimited">حُفظ الحد: غير محدود — انتبه لاستهلاك الرصيد والوقت</string>
     <string name="tab_main">الرئيسية</string>
     <string name="tab_chat">المحادثة</string>
     <string name="tab_settings">الإعدادات</string>

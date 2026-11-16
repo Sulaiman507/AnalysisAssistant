@@ -102,4 +102,6 @@
     <string name="report_evidence_tool">الأداة: %1$s</string>
     <string name="show_raw_json">عرض JSON الخام</string>
     <string name="hide_raw_json">إخفاء JSON الخام</string>
+    <string name="policy_diag_button">فحص سياسة ملفات MCP</string>
+    <string name="policy_diag_ok">تم الفحص ✓ — حُفظ في %1$s — شاركه مع سلوم</string>
 </resources>

@@ -21,6 +21,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.FileProvider
+import com.google.gson.JsonObject
 import com.musaed.analysis.mcp.AnalysisLoop
 import com.musaed.analysis.mcp.AnalysisResult
 import com.musaed.analysis.mcp.AnalysisStore
@@ -66,6 +67,7 @@ class MainActivity : Activity() {
     private lateinit var resultView: TextView
     private lateinit var targetInput: EditText
     private lateinit var fetchButton: Button
+    private lateinit var policyDiagButton: Button
     private lateinit var gateButton: Button
     private lateinit var stressButton: Button
     private lateinit var logButton: Button
@@ -254,6 +256,10 @@ class MainActivity : Activity() {
         }
         actionsCard.addView(buttonRow(fetchButton, gateButton))
         actionsCard.addView(buttonRow(stressButton, logButton))
+        policyDiagButton = styledButton(getString(R.string.policy_diag_button), false).apply {
+            setOnClickListener { runPolicyDiag() }
+        }
+        actionsCard.addView(buttonRow(policyDiagButton))
         analysisButton = styledButton(getString(R.string.analysis_run), true).apply {
             setOnClickListener { runAnalysis() }
         }
@@ -615,6 +621,7 @@ class MainActivity : Activity() {
 
     private fun setBusy(busy: Boolean) {
         fetchButton.isEnabled = !busy
+        policyDiagButton.isEnabled = !busy
         gateButton.isEnabled = !busy
         stressButton.isEnabled = !busy
         logButton.isEnabled = !busy
@@ -774,6 +781,60 @@ class MainActivity : Activity() {
                             ""
                         }
                     } + "\n\n" + getString(R.string.saved_to, jsonFile.absolutePath)
+                    setBusy(false)
+                    shareButton.isEnabled = true
+                }
+            } catch (e: McpException) {
+                runOnUiThread {
+                    statusView.text = getString(R.string.status_failed, e.message ?: "")
+                    resultView.text = getString(R.string.how_to_start_service)
+                    setBusy(false)
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    statusView.text = getString(R.string.status_failed, e.message ?: e.toString())
+                    setBusy(false)
+                }
+            }
+        }
+    }
+
+    /**
+     * فحص تشخيصي (0.1.16): يسأل خدمة MCP عن سياسة ملفاتها وعن ملفات APK
+     * التي تستطيع فتحها، ويعرض الرد الخام ويحفظه في ملف للمشاركة — فبدون
+     * مسار Home الحقيقي وقواعده لا يمكن معرفة أين تُنسخ ملفات APK المختارة
+     * (التنزيلات رُفضت أيضاً على الجهاز 2026-11-16 بعد Android/data).
+     * لا نموذج ولا رصيد يُصرف هنا: استدعاءان مباشران فقط.
+     */
+    private fun runPolicyDiag() {
+        setBusy(true)
+        statusView.text = getString(R.string.status_fetching)
+        resetResults()
+        thread {
+            try {
+                val client = McpClient()
+                client.connect()
+                val policy = client.callTool("mt_file_get_access_policy", JsonObject())
+                val available = client.callTool(
+                    "mt_apk_list_available_apks",
+                    JsonObject().apply {
+                        addProperty("prefix", "")
+                        addProperty("limit", 50)
+                    },
+                )
+                val text = buildString {
+                    appendLine("=== mt_file_get_access_policy ===")
+                    appendLine(policy.toString())
+                    appendLine()
+                    appendLine("=== mt_apk_list_available_apks ===")
+                    appendLine(available.toString())
+                }
+                val dir = mcpDir().apply { mkdirs() }
+                val file = File(dir, "policy_diag.txt").apply { writeText(text) }
+                lastDir = dir
+                runOnUiThread {
+                    statusView.text = getString(R.string.policy_diag_ok, file.absolutePath)
+                    resultView.text = text
                     setBusy(false)
                     shareButton.isEnabled = true
                 }

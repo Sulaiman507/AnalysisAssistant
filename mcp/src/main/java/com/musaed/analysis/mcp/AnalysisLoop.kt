@@ -4,10 +4,12 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 
-/** نتيجة حلقة التحليل: التقرير JSON الخام (كما ردّ به النموذج) أو الفشل مع الملاحظات. */
+/** نتيجة حلقة التحليل: التقرير JSON الخام + التقرير العربي بعده (المرحلة 5) أو الفشل مع الملاحظات. */
 data class AnalysisResult(
     val success: Boolean,
     val reportJson: String?,
+    /** التقرير العربي الذي كتبه النموذج بعد كائن JSON — قد يكون null. */
+    val reportArabic: String? = null,
     val stepsUsed: Int,
     val notes: List<String>,
     val targetPackage: String,
@@ -27,7 +29,7 @@ data class AnalysisResult(
  * نتائج الأدوات تُقتطع عند 6000 حرف في رسائل النموذج (الكامل يبقى في
  * سجل الجلسة) حتى لا يمتلئ سياقه.
  *
- * البرومبت يُمرَّر كمعامل — نص System Prompt v1.1 يُوضع في SystemPrompt
+ * البرومبت يُمرَّر كمعامل — نص System Prompt v1.3 يُوضع في SystemPrompt
  * عند توفره حرفياً، ولا يُكتب هنا نص بديل عنه.
  */
 class AnalysisLoop(
@@ -53,22 +55,24 @@ class AnalysisLoop(
         if (maxSteps == Int.MAX_VALUE) "خطوة $stepsUsed (بلا حد)" else "خطوة $stepsUsed/$maxSteps"
 
     fun run(
-        targetPackage: String,
+        target: String,
         userInstructions: String? = null,
         onStep: (String) -> Unit = {},
     ): AnalysisResult {
         val notes = mutableListOf<String>()
+        // التسمية المعروضة: اسم الملف لملف APK، واسم الحزمة لحزمة مثبّتة.
+        val targetLabel = if (target.startsWith("/")) target.substringAfterLast("/") else target
 
         // فتح مساحة عمل للهدف — بلا تجاوز لتطبيق آخر: التحليل يجب أن يكون
         // للتطبيق المطلوب نفسه، فإن حُظر فشل واضح برسالة صريحة.
-        onStep("فتح مساحة عمل لـ $targetPackage…")
+        onStep("فتح مساحة عمل لـ $targetLabel…")
         val workspaceId = try {
-            openWorkspace(targetPackage)
+            openWorkspace(target)
         } catch (e: Exception) {
             notes += e.message ?: e.toString()
             return AnalysisResult(
                 success = false, reportJson = null, stepsUsed = 0,
-                notes = notes, targetPackage = targetPackage, workspaceId = null,
+                notes = notes, targetPackage = targetLabel, workspaceId = null,
             )
         }
 
@@ -84,7 +88,10 @@ class AnalysisLoop(
 
         val messages = mutableListOf(
             ChatMessage("system", systemPrompt),
-            ChatMessage("user", userRequest(targetPackage, workspaceId, scanText, userInstructions)),
+            ChatMessage(
+                "user",
+                userRequest(target, target.startsWith("/"), workspaceId, scanText, userInstructions),
+            ),
         )
 
         var stepsUsed = 0
@@ -102,7 +109,7 @@ class AnalysisLoop(
                     notes += "توقف بعد $MAX_CONSECUTIVE_ERRORS أخطاء متتالية من النموذج."
                     return AnalysisResult(
                         success = false, reportJson = null, stepsUsed = stepsUsed,
-                        notes = notes, targetPackage = targetPackage, workspaceId = workspaceId,
+                        notes = notes, targetPackage = targetLabel, workspaceId = workspaceId,
                     )
                 }
                 messages += ChatMessage(
@@ -117,8 +124,9 @@ class AnalysisLoop(
             when (val action = parseAction(reply)) {
                 is Action.FinalReport -> {
                     return AnalysisResult(
-                        success = true, reportJson = action.json, stepsUsed = stepsUsed,
-                        notes = notes, targetPackage = targetPackage, workspaceId = workspaceId,
+                        success = true, reportJson = action.json,
+                        reportArabic = action.arabicReport, stepsUsed = stepsUsed,
+                        notes = notes, targetPackage = targetLabel, workspaceId = workspaceId,
                     )
                 }
                 is Action.ToolCall -> {
@@ -173,7 +181,7 @@ class AnalysisLoop(
                         notes += "توقف بعد $MAX_CONSECUTIVE_ERRORS ردود غير صالحة متتالية من النموذج."
                         return AnalysisResult(
                             success = false, reportJson = null, stepsUsed = stepsUsed,
-                            notes = notes, targetPackage = targetPackage, workspaceId = workspaceId,
+                            notes = notes, targetPackage = targetLabel, workspaceId = workspaceId,
                         )
                     }
                     messages += ChatMessage(
@@ -188,31 +196,32 @@ class AnalysisLoop(
         notes += "انتهى سقف الخطوات ($maxSteps) دون تقرير نهائي."
         return AnalysisResult(
             success = false, reportJson = null, stepsUsed = stepsUsed,
-            notes = notes, targetPackage = targetPackage, workspaceId = workspaceId,
+            notes = notes, targetPackage = targetLabel, workspaceId = workspaceId,
         )
     }
 
     internal sealed interface Action {
         data class ToolCall(val tool: String, val arguments: JsonObject) : Action
-        data class FinalReport(val json: String) : Action
+        data class FinalReport(val json: String, val arabicReport: String? = null) : Action
         data object Malformed : Action
     }
 
     /** يستخرج إجراء النموذج من ردّه: أداة أو تقرير نهائي أو غير صالح. */
     internal fun parseAction(reply: String): Action {
-        val jsonText = extractJson(reply) ?: return Action.Malformed
+        val split = ReportSplit.split(reply) ?: return Action.Malformed
+        val jsonText = split.first
         val obj = try {
             JsonParser.parseString(jsonText).asJsonObject
         } catch (_: Exception) {
             return Action.Malformed
         }
         if (obj.has("final_report")) {
-            return Action.FinalReport(obj.get("final_report").toString())
+            return Action.FinalReport(obj.get("final_report").toString(), split.second)
         }
         // التقرير النهائي بصيغته في البرومبت [٦]: كائن JSON مباشر بحقل
         // verdict (ثم التقرير العربي بعده) — هذه هي الصيغة المتوقعة عادة.
         if (obj.has("verdict")) {
-            return Action.FinalReport(obj.toString())
+            return Action.FinalReport(jsonText, split.second)
         }
         val tool = firstString(obj, "tool", "name") ?: return Action.Malformed
         if (!tool.startsWith("mt_")) return Action.Malformed
@@ -225,15 +234,8 @@ class AnalysisLoop(
         return Action.ToolCall(tool, args)
     }
 
-    /** يستخرج أول كتلة JSON من الرد (يزيل سياج ```json والنص المحيط). */
-    internal fun extractJson(reply: String): String? {
-        var text = reply.trim()
-        text = text.replace("```json", "").replace("```", "").trim()
-        val start = text.indexOf('{')
-        val end = text.lastIndexOf('}')
-        if (start < 0 || end <= start) return null
-        return text.substring(start, end + 1)
-    }
+    /** يستخرج أول كتلة JSON من الرد — تُركت للتوافق؛ الفصل المتوازن في ReportSplit. */
+    internal fun extractJson(reply: String): String? = ReportSplit.split(reply)?.first
 
     private fun firstString(obj: JsonObject, vararg keys: String): String? {
         for (k in keys) {
@@ -246,13 +248,18 @@ class AnalysisLoop(
     }
 
     private fun userRequest(
-        targetPackage: String,
+        target: String,
+        targetIsFile: Boolean,
         workspaceId: String,
         scanText: String,
         userInstructions: String? = null,
     ): String {
         return buildString {
-            appendLine("حلّل التطبيق $targetPackage (مساحة العمل $workspaceId).")
+            if (targetIsFile) {
+                appendLine("حلّل ملف APK $target (مساحة العمل $workspaceId).")
+            } else {
+                appendLine("حلّل التطبيق $target (مساحة العمل $workspaceId).")
+            }
             appendLine()
             if (!userInstructions.isNullOrBlank()) {
                 appendLine("تعليمات المستخدم من المحادثة — نفّذ التحليل وفقها:")
@@ -272,10 +279,15 @@ class AnalysisLoop(
         }
     }
 
-    /** يفتح مساحة عمل مؤقتة للهدف؛ يرمي برسالة عربية عند الفشل. */
-    private fun openWorkspace(targetPackage: String): String {
+    /**
+     * يفتح مساحة عمل مؤقتة للهدف؛ يرمي برسالة عربية عند الفشل.
+     * الهدف إما اسم حزمة مثبّتة (يُبحث عنه في قائمة التطبيقات) أو مسار
+     * ملف APK مطلق (يُفتح مباشرة — اختيار الملف في المرحلة 5).
+     */
+    private fun openWorkspace(target: String): String {
+        if (target.startsWith("/")) return openWorkspaceByPath(target)
         val listed = runner.call(TOOL_LIST_INSTALLED, JsonObject().apply {
-            addProperty("query", targetPackage)
+            addProperty("query", target)
             addProperty("appType", "user")
             addProperty("limit", 50)
         }, step = 0)
@@ -283,13 +295,17 @@ class AnalysisLoop(
         for (item in McpResults.itemsOf(McpResults.dataOf(listed))) {
             val path = McpResults.firstString(item, "path") ?: continue
             val pkg = McpResults.firstString(item, "packageName", "package", "name") ?: ""
-            if (pkg == targetPackage || path.contains(targetPackage)) {
+            if (pkg == target || path.contains(target)) {
                 targetPath = path
                 break
             }
         }
         val path = targetPath
-            ?: throw McpException("لم يُعثر على التطبيق $targetPackage بين التطبيقات المثبّتة.")
+            ?: throw McpException("لم يُعثر على التطبيق $target بين التطبيقات المثبّتة.")
+        return openWorkspaceByPath(path)
+    }
+
+    private fun openWorkspaceByPath(path: String): String {
         val opened = runner.call(TOOL_WORKSPACE_OPEN, JsonObject().apply {
             addProperty("path", path)
             addProperty("temporary", true)

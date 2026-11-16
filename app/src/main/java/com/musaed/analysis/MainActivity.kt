@@ -7,6 +7,7 @@ import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.provider.OpenableColumns
 import android.text.InputType
 import android.view.View
 import android.widget.Button
@@ -18,11 +19,13 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.musaed.analysis.mcp.AnalysisLoop
+import com.musaed.analysis.mcp.AnalysisResult
 import com.musaed.analysis.mcp.AnalysisStore
 import com.musaed.analysis.mcp.ChatAgent
 import com.musaed.analysis.mcp.ChatOutcome
 import com.musaed.analysis.mcp.ChatSession
 import com.musaed.analysis.mcp.ChatStore
+import com.musaed.analysis.mcp.EvidenceCard
 import com.musaed.analysis.mcp.GateTestStore
 import com.musaed.analysis.mcp.GateTester
 import com.musaed.analysis.mcp.McpClient
@@ -30,6 +33,7 @@ import com.musaed.analysis.mcp.McpException
 import com.musaed.analysis.mcp.ModelClient
 import com.musaed.analysis.mcp.ModelException
 import com.musaed.analysis.mcp.ProviderSettings
+import com.musaed.analysis.mcp.ReportView
 import com.musaed.analysis.mcp.SessionLog
 import com.musaed.analysis.mcp.SessionLogStore
 import com.musaed.analysis.mcp.StressTestStore
@@ -38,6 +42,7 @@ import com.musaed.analysis.mcp.SystemPrompt
 import com.musaed.analysis.mcp.ToolRunner
 import com.musaed.analysis.mcp.ToolsListStore
 import java.io.File
+import java.util.Locale
 import kotlin.concurrent.thread
 
 /**
@@ -49,6 +54,10 @@ import kotlin.concurrent.thread
  * ملاحظة: حزمة التطبيق com.musaed.analysis مؤقتة وقابلة للتغيير.
  */
 class MainActivity : Activity() {
+
+    companion object {
+        private const val REQUEST_PICK_APK = 1001
+    }
 
     private lateinit var statusView: TextView
     private lateinit var resultView: TextView
@@ -99,6 +108,20 @@ class MainActivity : Activity() {
     private var analysisMaxSteps: Int = AnalysisLoop.DEFAULT_MAX_STEPS
 
     private var lastDir: File? = null
+
+    // اختيار ملف APK (المرحلة 5): يُنسخ الملف المختار إلى مجلد الملفات
+    // الخارجية للتطبيق — فخدمة MCP (عملية MT Manager) لا تستطيع قراءة
+    // المجلد الداخلي الخاص بالتطبيق، بينما التخزين الخارجي مقروء لها.
+    // الملف المختار يقدَّم على الحزمة المكتوبة في الحقل.
+    private var chosenApkPath: String? = null
+    private var chosenApkName: String? = null
+    private lateinit var apkFileLabel: TextView
+
+    // التقرير المنظّم (المرحلة 5): حاوية تُبنى من جديد مع كل تحليل ناجح،
+    // وresultView يبقى للنتائج النصية البسيطة (قائمة أدوات، بوابة، إجهاد).
+    private lateinit var resultsContainer: LinearLayout
+    private lateinit var rawJsonView: TextView
+    private lateinit var jsonToggleButton: Button
 
     // التبويبات الثلاثة: الرئيسية (الهدف + الإجراءات + النتائج)، المحادثة،
     // الإعدادات. العنوان والحالة ثابتان فوق التبويبات وتبديلها لا يمس
@@ -180,6 +203,32 @@ class MainActivity : Activity() {
             setText(StressTester.DEFAULT_TARGET)
         }
         targetCard.addView(targetInput)
+        // اختيار ملف APK (المرحلة 5): زر + اسم الملف المختار + زر إلغاء.
+        val apkRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
+        val pickApkButton = styledButton(getString(R.string.pick_apk), false).apply {
+            setOnClickListener { pickApkFile() }
+        }
+        apkRow.addView(
+            pickApkButton,
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f),
+        )
+        apkFileLabel = TextView(this).apply {
+            text = getString(R.string.apk_none)
+            textSize = 13f
+            setTextColor(0xFFB0B0B0.toInt())
+            setPadding(dp(8), 0, 0, 0)
+        }
+        apkRow.addView(
+            apkFileLabel,
+            LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 2f),
+        )
+        val clearApkButton = styledButton(getString(R.string.apk_clear), false).apply {
+            setOnClickListener { clearChosenApk() }
+        }
+        apkRow.addView(clearApkButton)
+        targetCard.addView(apkRow)
         addCard(mainContent, targetCard)
 
         // بطاقة الإجراءات
@@ -338,7 +387,7 @@ class MainActivity : Activity() {
             LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         )
         val clearButton = styledButton(getString(R.string.clear_results), false).apply {
-            setOnClickListener { resultView.text = "" }
+            setOnClickListener { resetResults() }
         }
         resultsHeader.addView(clearButton)
         resultsCard.addView(resultsHeader)
@@ -349,6 +398,11 @@ class MainActivity : Activity() {
             setPadding(0, dp(8), 0, 0)
         }
         resultsCard.addView(resultView)
+        resultsContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            visibility = View.GONE
+        }
+        resultsCard.addView(resultsContainer)
         addCard(mainContent, resultsCard)
 
         setContentView(root)
@@ -625,7 +679,8 @@ class MainActivity : Activity() {
             try {
                 client.connect()
                 val model = ModelClient(settings.toModelConfig())
-                val target = targetInput.text.toString().trim().ifBlank { null }
+                val target = chosenApkPath
+                    ?: targetInput.text.toString().trim().ifBlank { null }
                 val agent = ChatAgent(
                     model::chat, runner, target,
                     lastReportJson?.take(2000),
@@ -690,7 +745,7 @@ class MainActivity : Activity() {
     private fun fetchTools() {
         setBusy(true)
         statusView.text = getString(R.string.status_fetching)
-        resultView.text = ""
+        resetResults()
         thread {
             try {
                 val client = McpClient()
@@ -735,7 +790,7 @@ class MainActivity : Activity() {
     private fun runGateTest() {
         setBusy(true)
         statusView.text = getString(R.string.status_gate_running)
-        resultView.text = ""
+        resetResults()
         thread {
             val client = McpClient()
             val log = SessionLog()
@@ -786,7 +841,7 @@ class MainActivity : Activity() {
         val target = targetInput.text.toString().trim().ifBlank { StressTester.DEFAULT_TARGET }
         setBusy(true)
         statusView.text = getString(R.string.status_stress_running)
-        resultView.text = ""
+        resetResults()
         thread {
             val client = McpClient()
             val log = SessionLog()
@@ -835,6 +890,7 @@ class MainActivity : Activity() {
             val text = if (file.exists()) file.readText() else null
             runOnUiThread {
                 if (text != null) {
+                    resetResults()
                     resultView.text = text
                     statusView.text = getString(R.string.saved_to, file.absolutePath)
                 } else {
@@ -970,7 +1026,7 @@ class MainActivity : Activity() {
         }
         fetchModelsButton.isEnabled = false
         settingsStatus.text = getString(R.string.settings_fetching)
-        resultView.text = ""
+        resetResults()
         thread {
             try {
                 val client = ModelClient(settings.toModelConfig())
@@ -998,6 +1054,213 @@ class MainActivity : Activity() {
 
     /** التحليل الكامل (المرحلة 3): الفحص السريع ثم حلقة الوكيل ببرومبت v1.1.
      *  تعليمات المحادثة — إن وُجدت — تُمرَّر للحلقة مع رسالة المستخدم الأولى. */
+    /** يعيد بطاقة النتائج للعرض النصي البسيط: يخفي التقرير المنظّم ويُظهر resultView. */
+    private fun resetResults() {
+        resultsContainer.removeAllViews()
+        resultsContainer.visibility = View.GONE
+        resultView.visibility = View.VISIBLE
+        resultView.text = ""
+    }
+
+    /**
+     * اختيار ملف APK (المرحلة 5): منتقي الملفات الكلاسيكي — فـ Activity
+     * العادية لا تحمل Activity Result API دون اعتماد androidx.activity،
+     * والتحقق المحلي يُبنى بلا تلك الحزمة.
+     */
+    private fun pickApkFile() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/vnd.android.package-archive"
+        }
+        @Suppress("DEPRECATION")
+        startActivityForResult(intent, REQUEST_PICK_APK)
+    }
+
+    @Deprecated("Deprecated in Java")
+    @Suppress("DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != REQUEST_PICK_APK || resultCode != Activity.RESULT_OK) return
+        val uri: Uri = data?.data ?: return
+        statusView.text = getString(R.string.apk_copying)
+        thread {
+            try {
+                val name = apkFileName(uri)
+                if (!name.endsWith(".apk", ignoreCase = true)) {
+                    runOnUiThread { statusView.text = getString(R.string.apk_not_apk) }
+                    return@thread
+                }
+                // نسخة في التخزين الخارجي للتطبيق — مقروءة لخدمة MCP.
+                val dir = File(getExternalFilesDir(null), "picked-apks").apply { mkdirs() }
+                val safeName = name.replace(Regex("[^A-Za-z0-9._-]"), "_")
+                val dest = File(dir, "${System.currentTimeMillis()}_$safeName")
+                contentResolver.openInputStream(uri)?.use { input ->
+                    dest.outputStream().use { output -> input.copyTo(output) }
+                } ?: throw IllegalStateException("تعذّر فتح الملف المختار.")
+                runOnUiThread {
+                    chosenApkPath = dest.absolutePath
+                    chosenApkName = name
+                    apkFileLabel.text = getString(R.string.apk_chosen, name)
+                    statusView.text = getString(R.string.apk_copied, name)
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    statusView.text = getString(
+                        R.string.apk_copy_failed, e.message ?: e.toString(),
+                    )
+                }
+            }
+        }
+    }
+
+    private fun apkFileName(uri: Uri): String {
+        contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+            ?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (index >= 0) return cursor.getString(index) ?: "app.apk"
+                }
+            }
+        return uri.lastPathSegment?.substringAfterLast("/") ?: "app.apk"
+    }
+
+    private fun clearChosenApk() {
+        chosenApkPath = null
+        chosenApkName = null
+        apkFileLabel.text = getString(R.string.apk_none)
+    }
+
+    /**
+     * يعرض تقرير التحليل منظّماً (المرحلة 5): النتيجة أولاً من JSON، ثم
+     * التقرير العربي، ثم الأدلة كبطاقات قابلة للفتح، وJSON الخام خلف زر.
+     * حالة «خادم صرف» تُعرض بسطرها الصريح — لا تُخفى ولا تُجمَّل.
+     */
+    private fun renderAnalysisResult(result: AnalysisResult) {
+        resetResults()
+        resultView.visibility = View.GONE
+        resultsContainer.visibility = View.VISIBLE
+        val summary = ReportView.parse(result.reportJson)
+        val verdictLine = TextView(this).apply {
+            textSize = 17f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(0xFFC9A227.toInt())
+            text = if (summary != null) {
+                val conf = summary.confidence?.let {
+                    " — " + getString(
+                        R.string.report_confidence,
+                        "%.2f".format(Locale.US, it),
+                    )
+                } ?: ""
+                getString(R.string.report_verdict, summary.verdictLabel) + conf
+            } else {
+                getString(R.string.report_verdict, "؟")
+            }
+        }
+        resultsContainer.addView(verdictLine)
+        summary?.gateText?.let { gate ->
+            resultsContainer.addView(TextView(this).apply {
+                textSize = 15f
+                setTextColor(0xFFE0E0E0.toInt())
+                text = getString(R.string.report_gate, gate)
+            })
+        }
+        if (summary?.paymentSdk != null && summary.paymentSdk != "none") {
+            resultsContainer.addView(TextView(this).apply {
+                textSize = 15f
+                setTextColor(0xFFE0E0E0.toInt())
+                text = getString(R.string.report_sdk, summary.paymentSdk)
+            })
+        }
+        if (summary?.verdict == "server") {
+            resultsContainer.addView(TextView(this).apply {
+                textSize = 15f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(0xFFC9A227.toInt())
+                text = getString(R.string.report_not_modifiable)
+            })
+        }
+        val arabicView = TextView(this).apply {
+            textSize = 15f
+            setTextColor(0xFFE0E0E0.toInt())
+            setPadding(0, dp(8), 0, 0)
+            text = result.reportArabic ?: getString(R.string.report_arabic_missing)
+        }
+        resultsContainer.addView(arabicView)
+        if (summary != null && summary.evidence.isNotEmpty()) {
+            resultsContainer.addView(TextView(this).apply {
+                textSize = 15f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(0xFFC9A227.toInt())
+                setPadding(0, dp(12), 0, dp(4))
+                text = getString(R.string.report_evidence_title)
+            })
+            summary.evidence.forEach { card ->
+                resultsContainer.addView(evidenceCardView(card))
+            }
+        }
+        jsonToggleButton = styledButton(getString(R.string.show_raw_json), false).apply {
+            setOnClickListener {
+                val showing = rawJsonView.visibility == View.VISIBLE
+                rawJsonView.visibility = if (showing) View.GONE else View.VISIBLE
+                text = getString(
+                    if (showing) R.string.show_raw_json else R.string.hide_raw_json,
+                )
+            }
+        }
+        resultsContainer.addView(jsonToggleButton, fullWidthParams())
+        rawJsonView = TextView(this).apply {
+            textSize = 13f
+            setTextColor(0xFFB0B0B0.toInt())
+            visibility = View.GONE
+            text = result.reportJson ?: "{}"
+        }
+        resultsContainer.addView(rawJsonView)
+        result.notes.forEach { note ->
+            resultsContainer.addView(TextView(this).apply {
+                textSize = 13f
+                setTextColor(0xFFB0B0B0.toInt())
+                setPadding(0, dp(6), 0, 0)
+                text = "ملاحظة: $note"
+            })
+        }
+    }
+
+    /** بطاقة دليل واحدة: العنوان والمعرّف ظاهران، والمقتطف يُفتح بالضغط. */
+    private fun evidenceCardView(card: EvidenceCard): LinearLayout {
+        val detail = TextView(this).apply {
+            textSize = 14f
+            setTextColor(0xFFE0E0E0.toInt())
+            visibility = View.GONE
+            setPadding(0, dp(4), 0, 0)
+            text = card.excerpt.ifBlank { "—" }
+        }
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(10), dp(8), dp(10), dp(8))
+            background = roundedBg(0xFF1E1E1E.toInt(), 0xFFC9A227.toInt())
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(6) }
+            addView(TextView(this@MainActivity).apply {
+                textSize = 15f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(0xFFE0E0E0.toInt())
+                text = "#${card.id} — ${card.identifier.ifBlank { "؟" }}"
+            })
+            addView(TextView(this@MainActivity).apply {
+                textSize = 13f
+                setTextColor(0xFFB0B0B0.toInt())
+                text = getString(R.string.report_evidence_tool, card.tool.ifBlank { "؟" })
+            })
+            addView(detail)
+            setOnClickListener {
+                detail.visibility =
+                    if (detail.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+            }
+        }
+    }
+
     private fun runAnalysis(userInstructions: String? = null) {
         val settings = settingsFromFields()
         if (!settings.isConfigured()) {
@@ -1005,10 +1268,12 @@ class MainActivity : Activity() {
             return
         }
         providerSettings = settings
-        val target = targetInput.text.toString().trim().ifBlank { StressTester.DEFAULT_TARGET }
+        // الملف المختار يقدَّم على الحزمة المكتوبة (المرحلة 5).
+        val target = chosenApkPath
+            ?: targetInput.text.toString().trim().ifBlank { StressTester.DEFAULT_TARGET }
         setBusy(true)
         statusView.text = getString(R.string.status_analysis_running)
-        resultView.text = ""
+        resetResults()
         thread {
             val client = McpClient()
             val log = SessionLog()
@@ -1031,9 +1296,12 @@ class MainActivity : Activity() {
                     } else {
                         getString(R.string.analysis_failed, result.notes.lastOrNull() ?: "")
                     }
-                    resultView.text = buildString {
-                        if (result.reportJson != null) appendLine(result.reportJson)
-                        result.notes.forEach { appendLine("ملاحظة: $it") }
+                    if (result.success) {
+                        renderAnalysisResult(result)
+                    } else {
+                        resultView.text = buildString {
+                            result.notes.forEach { appendLine("ملاحظة: $it") }
+                        }
                     }
                     setBusy(false)
                     shareButton.isEnabled = true

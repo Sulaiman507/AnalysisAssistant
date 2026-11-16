@@ -107,6 +107,40 @@ class AnalysisLoopTest {
     }
 
     @Test
+    fun `bare report keeps the arabic report text after the json`() {
+        val model = FakeModel(listOf(outlineAction, bareReport))
+        val (loop, _) = makeLoop(model)
+        val result = loop.run("com.musaed.test.clear")
+        assertTrue(result.success)
+        assertTrue(result.reportArabic!!.contains("التقرير: الفحص محلي في PremiumGate."))
+    }
+
+    @Test
+    fun `opens an apk file path directly without listing installed apps`() {
+        val server = FakeServer(
+            mapOf(
+                "mt_apk_workspace_open" to FakeMcp.toolResult("""{"data":{"workspaceId":"ws-file"}}"""),
+                "mt_apk_dex_read_class_outline" to FakeMcp.toolResult(outline),
+            ),
+            sequential = mapOf(
+                "mt_apk_search" to List(14) { FakeMcp.toolResult(emptySearch) },
+                "mt_apk_dex_list_classes" to listOf(FakeMcp.toolResult(classes)),
+            ),
+        )
+        val log = SessionLog()
+        val runner = ToolRunner(server::call, log, timeoutMs = 5_000)
+        val model = FakeModel(listOf(bareReport))
+        val loop = AnalysisLoop(model::chat, runner, log, testPrompt, maxSteps = 40)
+        val result = loop.run("/storage/emulated/0/Download/app.apk")
+        assertTrue(result.success)
+        assertEquals("app.apk", result.targetPackage)
+        assertEquals("ws-file", result.workspaceId)
+        val openCall = server.calls.first { it.first == "mt_apk_workspace_open" }
+        assertEquals("/storage/emulated/0/Download/app.apk", openCall.second.get("path").asString)
+        assertTrue(server.calls.none { it.first == "mt_apk_list_installed_apps" })
+    }
+
+    @Test
     fun `recovers from a malformed reply`() {        val model = FakeModel(listOf("هذا نص بلا JSON", outlineAction, finalReport))
         val (loop, _) = makeLoop(model)
         val result = loop.run("com.musaed.test.clear")

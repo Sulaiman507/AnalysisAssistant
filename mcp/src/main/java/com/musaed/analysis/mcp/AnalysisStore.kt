@@ -14,15 +14,20 @@ object AnalysisStore {
         val jsonFile = File(dir, JSON_FILE)
         jsonFile.writeText(result.reportJson ?: "{}")
         val text = buildString {
-            appendLine("نتيجة التحليل — مساعد التحليل (المرحلة ٣)")
+            appendLine("نتيجة التحليل — مساعد التحليل (المرحلة ٥)")
             appendLine("التطبيق الهدف: ${result.targetPackage}")
             appendLine("مساحة العمل: ${result.workspaceId ?: "—"}")
             appendLine("الخطوات المستخدمة: ${result.stepsUsed}")
             appendLine("النتيجة: " + if (result.success) "ناجح ✓" else "غير مكتمل ✗")
             result.notes.forEach { appendLine("ملاحظة: $it") }
             appendLine()
-            appendLine("التقرير JSON:")
-            appendLine(result.reportJson ?: "(لا يوجد تقرير)")
+            if (result.reportArabic != null) {
+                appendLine("التقرير العربي:")
+                appendLine(result.reportArabic)
+            } else {
+                appendLine("التقرير JSON:")
+                appendLine(result.reportJson ?: "(لا يوجد تقرير)")
+            }
         }
         val textFile = File(dir, TEXT_FILE)
         textFile.writeText(text)

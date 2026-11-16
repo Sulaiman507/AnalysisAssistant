@@ -243,22 +243,28 @@ class ChatAgent(
         workspaceId?.let { return it }
         val target = targetPackage?.trim().orEmpty()
         if (target.isBlank()) return null
-        val listed = runner.call(TOOL_LIST_INSTALLED, JsonObject().apply {
-            addProperty("query", target)
-            addProperty("appType", "user")
-            addProperty("limit", 50)
-        }, step = 0)
-        var targetPath: String? = null
-        for (item in McpResults.itemsOf(McpResults.dataOf(listed))) {
-            val path = McpResults.firstString(item, "path") ?: continue
-            val pkg = McpResults.firstString(item, "packageName", "package", "name") ?: ""
-            if (pkg == target || path.contains(target)) {
-                targetPath = path
-                break
+        // مسار ملف APK مطلق (اختيار الملف في المرحلة 5) يُفتح مباشرة
+        // دون البحث في قائمة التطبيقات المثبّتة.
+        val path = if (target.startsWith("/")) {
+            target
+        } else {
+            val listed = runner.call(TOOL_LIST_INSTALLED, JsonObject().apply {
+                addProperty("query", target)
+                addProperty("appType", "user")
+                addProperty("limit", 50)
+            }, step = 0)
+            var targetPath: String? = null
+            for (item in McpResults.itemsOf(McpResults.dataOf(listed))) {
+                val itemPath = McpResults.firstString(item, "path") ?: continue
+                val pkg = McpResults.firstString(item, "packageName", "package", "name") ?: ""
+                if (pkg == target || itemPath.contains(target)) {
+                    targetPath = itemPath
+                    break
+                }
             }
+            targetPath
+                ?: throw McpException("لم يُعثر على التطبيق $target بين التطبيقات المثبّتة.")
         }
-        val path = targetPath
-            ?: throw McpException("لم يُعثر على التطبيق $target بين التطبيقات المثبّتة.")
         val opened = runner.call(TOOL_WORKSPACE_OPEN, JsonObject().apply {
             addProperty("path", path)
             addProperty("temporary", true)

@@ -84,4 +84,22 @@
     <string name="tab_main">الرئيسية</string>
     <string name="tab_chat">المحادثة</string>
     <string name="tab_settings">الإعدادات</string>
+    <string name="pick_apk">اختيار ملف APK</string>
+    <string name="apk_none">لم يُختر ملف APK — أو أدخل اسم حزمة مثبّتة أعلاه</string>
+    <string name="apk_chosen">الملف: %1$s</string>
+    <string name="apk_clear">✕</string>
+    <string name="apk_copying">جارٍ نسخ ملف APK…</string>
+    <string name="apk_copied">تم اختيار الملف: %1$s — سيُحلَّل هو بدل الحزمة المكتوبة.</string>
+    <string name="apk_copy_failed">تعذّر نسخ الملف: %1$s</string>
+    <string name="apk_not_apk">الملف المختار ليس APK — اختر ملفاً بامتداد .apk</string>
+    <string name="report_verdict">النتيجة: %1$s</string>
+    <string name="report_confidence">الثقة: %1$s</string>
+    <string name="report_gate">البوابة: %1$s</string>
+    <string name="report_sdk">مكتبة الدفع: %1$s</string>
+    <string name="report_not_modifiable">غير قابل للتعديل محلياً — الفحص يتم على الخادم.</string>
+    <string name="report_arabic_missing">التقرير العربي غير متوفر — اعرض JSON الخام بالأسفل.</string>
+    <string name="report_evidence_title">الأدلة — اضغط على بطاقة لفتح تفاصيلها:</string>
+    <string name="report_evidence_tool">الأداة: %1$s</string>
+    <string name="show_raw_json">عرض JSON الخام</string>
+    <string name="hide_raw_json">إخفاء JSON الخام</string>
 </resources>

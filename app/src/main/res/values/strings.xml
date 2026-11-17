@@ -104,4 +104,7 @@
     <string name="hide_raw_json">إخفاء JSON الخام</string>
     <string name="policy_diag_button">فحص سياسة ملفات MCP</string>
     <string name="policy_diag_ok">تم الفحص ✓ — حُفظ في %1$s — شاركه مع سلوم</string>
+    <string name="chat_stop">إيقاف إجباري</string>
+    <string name="chat_stopping">جارٍ الإيقاف…</string>
+    <string name="chat_stopped">أوقفت المحادثة إجبارياً ✓</string>
 </resources>

@@ -92,8 +92,14 @@ class MainActivity : Activity() {
     private lateinit var chatSendButton: Button
     private lateinit var chatRunButton: Button
     private lateinit var chatClearButton: Button
+    private lateinit var chatStopButton: Button
     private var chatSession = ChatSession()
     private var chatLog = SessionLog()
+    // زر «إيقاف إجباري»: مراجع الجولة الحالية ليقطعها الزر (الوكيل +
+    // العميلان) — تُمسح عند انتهاء الرد.
+    private var currentChatAgent: ChatAgent? = null
+    private var currentChatModel: ModelClient? = null
+    private var currentChatMcp: McpClient? = null
     private var lastReportJson: String? = null
 
     // حد خطوات قراءة المحادثة: يُحفظ في الجهاز، الافتراضي 5،
@@ -466,7 +472,11 @@ class MainActivity : Activity() {
                 renderChat()
             }
         }
-        val actionsRow = buttonRow(chatRunButton, chatClearButton).apply {
+        chatStopButton = styledButton(getString(R.string.chat_stop), false).apply {
+            isEnabled = false
+            setOnClickListener { stopChat() }
+        }
+        val actionsRow = buttonRow(chatRunButton, chatClearButton, chatStopButton).apply {
             setPadding(dp(16), dp(8), dp(16), 0)
         }
         chatContainer.addView(actionsRow)
@@ -688,11 +698,13 @@ class MainActivity : Activity() {
         statusView.text = getString(R.string.chat_thinking)
         thread {
             val client = McpClient()
+            currentChatMcp = client
             chatLog = SessionLog()
             val runner = ToolRunner(client::callTool, chatLog)
             try {
                 client.connect()
                 val model = ModelClient(settings.toModelConfig())
+                currentChatModel = model
                 val target = chosenApkPath
                     ?: targetInput.text.toString().trim().ifBlank { null }
                 val agent = ChatAgent(
@@ -700,6 +712,8 @@ class MainActivity : Activity() {
                     lastReportJson?.take(2000),
                     maxToolSteps = chatMaxToolSteps,
                 )
+                currentChatAgent = agent
+                runOnUiThread { chatStopButton.isEnabled = true }
                 val outcome = agent.respond(chatSession, text) { step ->
                     runOnUiThread { statusView.text = step }
                 }
@@ -709,10 +723,14 @@ class MainActivity : Activity() {
                 runOnUiThread {
                     renderChat()
                     setBusy(false)
+                    chatStopButton.isEnabled = false
+                    clearChatRunRefs()
                     shareButton.isEnabled = true
                     if (outcome is ChatOutcome.RunAnalysis) {
                         statusView.text = getString(R.string.chat_run_started)
                         runAnalysis(outcome.instructions)
+                    } else if (outcome is ChatOutcome.Stopped) {
+                        statusView.text = getString(R.string.chat_stopped)
                     } else {
                         statusView.text = getString(R.string.chat_answered)
                     }
@@ -722,23 +740,48 @@ class MainActivity : Activity() {
                     statusView.text = getString(R.string.status_failed, e.message ?: "")
                     recoverChatMessage(text)
                     setBusy(false)
+                    chatStopButton.isEnabled = false
+                    clearChatRunRefs()
                 }
             } catch (e: ModelException) {
                 runOnUiThread {
                     statusView.text = getString(R.string.analysis_failed, e.message ?: "")
                     recoverChatMessage(text)
                     setBusy(false)
+                    chatStopButton.isEnabled = false
+                    clearChatRunRefs()
                 }
             } catch (e: Exception) {
                 runOnUiThread {
                     statusView.text = getString(R.string.analysis_failed, e.message ?: e.toString())
                     recoverChatMessage(text)
                     setBusy(false)
+                    chatStopButton.isEnabled = false
+                    clearChatRunRefs()
                 }
             } finally {
                 runner.shutdown()
             }
         }
+    }
+
+    /**
+     * زر «إيقاف إجباري» (قرار سليمان 2026-11-17 — الكابح بدل القائمة
+     * البيضاء): يعلّم الوكيل بالتوقف ويقطع الاتصالين الجاريين (النموذج
+     * وMCP) فتُجهض القراءة المعلقة فوراً؛ الحلقة تتوقف قبل الخطوة التالية
+     * وتسجّل «أوقفت المحادثة إجبارياً» في المحادثة.
+     */
+    private fun stopChat() {
+        statusView.text = getString(R.string.chat_stopping)
+        currentChatAgent?.requestStop()
+        currentChatModel?.cancelActive()
+        currentChatMcp?.cancelActive()
+    }
+
+    private fun clearChatRunRefs() {
+        currentChatAgent = null
+        currentChatModel = null
+        currentChatMcp = null
     }
 
     /**

@@ -7,38 +7,34 @@ import org.junit.Test
 class ChatPromptTest {
 
     @Test
-    fun `whitelist is read only`() {
-        // القائمة البيضاء محددة بالاسم حرفياً — أي أداة تعديل/بناء/تثبيت/
-        // حذف خارجها تُرفض. أسماء القراءة وحدها مسموحة (ومنها
-        // list_installed_apps — سرد التطبيقات المثبتة قراءة، لا تثبيت).
-        val expected = setOf(
-            "mt_apk_list_installed_apps",
-            "mt_apk_list_available_apks",
-            "mt_apk_workspace_open",
-            "mt_apk_list_entries",
-            "mt_apk_search",
-            "mt_apk_dex_list_classes",
-            "mt_apk_dex_read_class_outline",
+    fun `known tools cover all 67 live tools`() {
+        // بلا حدود بقرار سليمان 2026-11-17: كل أدوات الخدمة الـ 67 معروفة
+        // — قراءة وتعديل وبناء وتثبيت وحذف وملفات وZIP.
+        assertEquals(67, ChatPrompt.KNOWN_TOOLS.size)
+        for (name in listOf(
             "mt_apk_dex_read_pseudocode",
-            "mt_apk_read_text",
-            "mt_apk_dex_xref",
-            "mt_apk_resource_list",
-            "mt_apk_resource_read",
-            "mt_apk_read_signature",
-            "mt_apk_continue",
-        )
-        assertEquals(expected, ChatPrompt.WHITELIST)
+            "mt_apk_edit_text",
+            "mt_apk_patch_bytes",
+            "mt_apk_build",
+            "mt_apk_install",
+            "mt_apk_delete_target",
+            "mt_file_delete",
+            "mt_zip_create",
+            "mt_file_get_access_policy",
+        )) {
+            assertTrue("$name must be known", name in ChatPrompt.KNOWN_TOOLS)
+        }
     }
 
     @Test
-    fun `prompt states the run analysis contract`() {
+    fun `prompt states the run analysis contract and no limits`() {
         assertTrue(ChatPrompt.TEXT.contains("run_analysis"))
-        assertTrue(ChatPrompt.TEXT.contains("قراءة فقط"))
+        assertTrue(ChatPrompt.TEXT.contains("بلا حدود"))
     }
 
     @Test
-    fun `catalog covers every whitelisted tool`() {
-        for (name in ChatPrompt.WHITELIST) {
+    fun `catalog covers every known tool`() {
+        for (name in ChatPrompt.KNOWN_TOOLS) {
             assertTrue("catalog must describe $name", ChatPrompt.TOOL_CATALOG_TEXT.contains(name))
         }
     }

@@ -4,10 +4,11 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 
-/** نتيجة رسالة محادثة واحدة: جواب نصي، أو طلب بدء التحليل الكامل. */
+/** نتيجة رسالة محادثة واحدة: جواب نصي، أو طلب بدء التحليل الكامل، أو إيقاف إجباري. */
 sealed interface ChatOutcome {
     data class Answer(val text: String) : ChatOutcome
     data class RunAnalysis(val instructions: String) : ChatOutcome
+    data object Stopped : ChatOutcome
 }
 
 /**
@@ -22,16 +23,25 @@ sealed interface ChatOutcome {
  * وتُستخرج كتلة JSON الأولى إن لفّ النموذج ردّه بنص أو بسياج ```json.
  *
  * ضمانات:
- *  - القائمة البيضاء فقط: أي أداة خارج ChatPrompt.WHITELIST تُرفض
- *    محلياً دون الوصول للخادم — المحادثة قراءة فقط، لا تعديل أبداً.
+ *  - بلا حدود بقرار سليمان (2026-11-17): أي أداة من KNOWN_TOOLS (كل أدوات
+ *    الخدمة الـ 67) مسموحة، بما فيها التعديل والبناء والتثبيت والحذف.
+ *    الأمان زر «إيقاف إجباري» (requestStop)، لا قائمة بيضاء. أما اسم أداة
+ *    مخترع (خارج KNOWN_TOOLS) فيُرفض محلياً دون الوصول للخادم.
+ *  - حقن المعرّفات حسب مخطط الأداة (القائمة الحية MT MCP 0.2.0):
+ *    أدوات [جلسة] (SESSION_TOOLS) يُحقن لها workspaceId + editSessionId؛
+ *    أدوات WORKSPACE_ONLY_TOOLS يُحقن لها workspaceId وحده؛ أدوات الفتح
+ *    والملفات وZIP والتثبيت تُرسل كما أرسلها النموذج بلا حقن.
+ *  - معرّف الجلسة: إن أنشأ النموذج جلسة تعديل بـ session_create يُحفظ
+ *    معرّفها ويُحقن في أدوات الجلسة بعدها بدل الجلسة الفارغة "" — فبعض
+ *    أدوات التعديل (patch_bytes وأدوات Native) يرفض جلسة فارغة.
  *  - أدوات الفتح (SETUP_TOOLS) تُرسل بمعاملات النموذج كما هي، بلا
  *    حقن workspaceId/editSessionId — هاتان الأداتان لا تقبلانهما.
  *    أما أدوات القراءة فيُحقن لها المعرفان عند غيابهما.
  *  - مساحة العمل تُفتح عند أول أداة تحتاجها فقط، وللهدف نفسه فقط —
  *    بلا تجاوز لتطبيق آخر.
- *  - عدد استدعاءات النموذج لكل رسالة محدود (maxToolSteps + 1) حتى لا
- *    تدور المحادثة بلا نهاية على حساب رصيد المستخدم — وmaxToolSteps
- *    قابل للتعديل من إعدادات المحادثة (Int.MAX_VALUE = بلا حد).
+ *  - عدد استدعاءات النموذج لكل رسالة بلا حد افتراضياً (maxToolSteps =
+ *    Int.MAX_VALUE) بقرار سليمان 2026-11-17 — ويُضبط من إعدادات المحادثة.
+ *    زر «إيقاف إجباري» هو الكابح، لا السقف.
  *  - نتائج الأدوات تُقتطع عند 4000 حرف في رسائل النموذج (الكامل يبقى
  *    في سجل المحادثة) حتى لا يمتلئ سياقه.
  */
@@ -44,11 +54,13 @@ class ChatAgent(
     private val maxToolSteps: Int = 5,
 ) {
     companion object {
-        const val DEFAULT_MAX_TOOL_STEPS = 5
+        const val DEFAULT_MAX_TOOL_STEPS = Int.MAX_VALUE
         const val MAX_TOOL_RESULT_CHARS = 4000
         const val TOOL_LIST_INSTALLED = "mt_apk_list_installed_apps"
         const val TOOL_LIST_AVAILABLE = "mt_apk_list_available_apks"
         const val TOOL_WORKSPACE_OPEN = "mt_apk_workspace_open"
+        const val TOOL_SESSION_CREATE = "mt_apk_session_create"
+        const val TOOL_WORKSPACE_DELETE = "mt_apk_workspace_delete"
 
         /**
          * أدوات الفتح: تعمل بلا مساحة عمل ولا تقبل workspaceId ولا
@@ -58,9 +70,109 @@ class ChatAgent(
          * الأولى لأن برومبت المحادثة يأمره بهاتين الأداتين أولاً.
          */
         val SETUP_TOOLS = setOf(TOOL_LIST_INSTALLED, TOOL_LIST_AVAILABLE, TOOL_WORKSPACE_OPEN)
+
+        /**
+         * أدوات مساحة العمل التي تقبل workspaceId وحده (بلا editSessionId)
+         * حسب مخططات القائمة الحية MT MCP 0.2.0.
+         */
+        val WORKSPACE_ONLY_TOOLS = setOf(
+            TOOL_SESSION_CREATE,
+            "mt_apk_read_signature",
+            TOOL_WORKSPACE_DELETE,
+        )
+
+        /**
+         * أدوات آمنة لإعادة المحاولة عند فشل النقل/المهلة: قراءة فقط —
+         * إعادة استدعائها لا تغيّر شيئاً. كل أداة أخرى (تعديل/بناء/
+         * تثبيت/حذف/إنشاء جلسة) تُستدعى بلا إعادة محاولة (allowRetry=false)
+         * حتى لا تُطبَّق مرتين إن نجحت المحاولة الأولى وضاع ردها.
+         */
+        val READ_TOOLS = setOf(
+            TOOL_LIST_INSTALLED,
+            TOOL_LIST_AVAILABLE,
+            TOOL_WORKSPACE_OPEN,
+            "mt_apk_workspace_list",
+            "mt_apk_list_entries",
+            "mt_apk_search",
+            "mt_apk_read_text",
+            "mt_apk_read_bytes",
+            "mt_apk_read_signature",
+            "mt_apk_continue",
+            "mt_apk_dex_list_classes",
+            "mt_apk_dex_read_class_outline",
+            "mt_apk_dex_read_pseudocode",
+            "mt_apk_dex_xref",
+            "mt_apk_resource_list",
+            "mt_apk_resource_read",
+            "mt_apk_resource_xref",
+            "mt_apk_native_inspect",
+            "mt_apk_native_list_items",
+            "mt_apk_native_map_address",
+            "mt_apk_native_disassemble",
+            "mt_apk_native_xref",
+            "mt_apk_native_analyze_control_flow",
+            "mt_file_get_access_policy",
+            "mt_file_list",
+            "mt_file_stat",
+            "mt_file_search",
+            "mt_file_search_text",
+            "mt_file_read_text",
+            "mt_file_read_bytes",
+            "mt_file_transfer_get",
+            "mt_file_transfer_create_download",
+            "mt_zip_list",
+            "mt_zip_read_text",
+            "mt_zip_read_bytes",
+            "mt_zip_test",
+        )
+
+        /**
+         * أدوات [جلسة]: تقبل workspaceId + editSessionId حسب مخططات
+         * القائمة الحية MT MCP 0.2.0 — كل أدوات APK عدا أدوات الفتح
+         * وأدوات WORKSPACE_ONLY_TOOLS وأدوات بلا معرّفات (install و
+         * workspace_list). تُحقن لها المعرّفان عند غيابهما.
+         */
+        val SESSION_TOOLS = setOf(
+            "mt_apk_list_entries",
+            "mt_apk_search",
+            "mt_apk_read_text",
+            "mt_apk_read_bytes",
+            "mt_apk_continue",
+            "mt_apk_dex_list_classes",
+            "mt_apk_dex_read_class_outline",
+            "mt_apk_dex_read_pseudocode",
+            "mt_apk_dex_xref",
+            "mt_apk_resource_list",
+            "mt_apk_resource_read",
+            "mt_apk_resource_xref",
+            "mt_apk_resource_add",
+            "mt_apk_resource_edit",
+            "mt_apk_resource_delete",
+            "mt_apk_native_inspect",
+            "mt_apk_native_list_items",
+            "mt_apk_native_map_address",
+            "mt_apk_native_disassemble",
+            "mt_apk_native_xref",
+            "mt_apk_native_analyze_control_flow",
+            "mt_apk_native_patch_instructions",
+            "mt_apk_native_patch_string",
+            "mt_apk_edit_text",
+            "mt_apk_patch_bytes",
+            "mt_apk_copy_entry",
+            "mt_apk_delete_target",
+            "mt_apk_session_check",
+            "mt_apk_build",
+        )
     }
 
     private var workspaceId: String? = null
+    private var editSessionId: String? = null
+    private val stopRequested = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    /** زر «إيقاف إجباري»: يوقف الحلقة قبل الخطوة التالية، ويُقطع معه الاتصال الجاري من التطبيق. */
+    fun requestStop() {
+        stopRequested.set(true)
+    }
 
     fun respond(session: ChatSession, userText: String, onStep: (String) -> Unit = {}): ChatOutcome {
         session.addUser(userText)
@@ -72,10 +184,20 @@ class ChatAgent(
         // الحلقة) — والحد نفسه لا يُبلغ أبداً فلا حاجة لرسالة السقف.
         val maxAttempts = if (maxToolSteps == Int.MAX_VALUE) Int.MAX_VALUE else maxToolSteps + 1
         for (attempt in 1..maxAttempts) {
+            if (stopRequested.get()) {
+                val text = "أوقفت المحادثة إجبارياً — توقفت قبل إكمال الرد."
+                session.addModel(text)
+                return ChatOutcome.Stopped
+            }
             onStep("النموذج يفكّر…")
             val reply = try {
                 chat(messages)
             } catch (e: Exception) {
+                if (stopRequested.get()) {
+                    val text = "أوقفت المحادثة إجبارياً — توقفت قبل إكمال الرد."
+                    session.addModel(text)
+                    return ChatOutcome.Stopped
+                }
                 val text = "تعذّر الوصول إلى النموذج: ${e.message ?: e.toString()}"
                 session.addModel(text)
                 return ChatOutcome.Answer(text)
@@ -93,12 +215,12 @@ class ChatAgent(
                     return ChatOutcome.RunAnalysis(session.instructionsForAnalysis())
                 }
                 is Parsed.ToolCall -> {
-                    if (parsed.tool !in ChatPrompt.WHITELIST) {
+                    if (parsed.tool !in ChatPrompt.KNOWN_TOOLS) {
                         messages += ChatMessage(
                             "user",
-                            "الأداة ${parsed.tool} ليست من أدوات القراءة المتاحة في المحادثة. " +
-                                "الأدوات المتاحة هي: " + ChatPrompt.WHITELIST.joinToString(", ") +
-                                ". استخدم واحدة منها، أو أجب بنص عادي.",
+                            "الأداة ${parsed.tool} غير موجودة في القائمة الحية " +
+                                "(67 أداة) — فهي اسم مخترع، لا أداة حقيقية. " +
+                                "استخدم أداة من الدليل، أو أجب بنص عادي.",
                         )
                         continue
                     }
@@ -119,7 +241,8 @@ class ChatAgent(
                         // منهما إن أرسلهما هو نفسه خطأً.
                         args.remove("workspaceId")
                         args.remove("editSessionId")
-                    } else {
+                    } else if (parsed.tool in WORKSPACE_ONLY_TOOLS) {
+                        // تقبل workspaceId وحده — بلا editSessionId.
                         val workspace = ensureWorkspace()
                         if (workspace == null) {
                             messages += ChatMessage(
@@ -130,16 +253,43 @@ class ChatAgent(
                             continue
                         }
                         if (!args.has("workspaceId")) args.addProperty("workspaceId", workspace)
-                        if (!args.has("editSessionId")) args.addProperty("editSessionId", "")
+                        args.remove("editSessionId")
+                    } else if (parsed.tool in SESSION_TOOLS) {
+                        val workspace = ensureWorkspace()
+                        if (workspace == null) {
+                            messages += ChatMessage(
+                                "user",
+                                "لم يُحدد تطبيق هدف بعد — اسأل المستخدم عن اسم حزمة التطبيق " +
+                                    "ليكتبه في حقل الهدف أولاً، ثم أعد المحاولة.",
+                            )
+                            continue
+                        }
+                        if (!args.has("workspaceId")) args.addProperty("workspaceId", workspace)
+                        if (!args.has("editSessionId")) {
+                            args.addProperty("editSessionId", editSessionId ?: "")
+                        }
                     }
+                    // أدوات بلا معرّفات (install وworkspace_list وأدوات
+                    // الملفات وZIP) تُرسل كما أرسلها النموذج بلا حقن.
+                    // أدوات الكتابة بلا إعادة محاولة (انظر READ_TOOLS).
                     val result = try {
-                        val r = runner.call(parsed.tool, args, step = 0)
+                        val r = runner.call(
+                            parsed.tool, args, step = 0,
+                            allowRetry = parsed.tool in READ_TOOLS,
+                        )
                         // إن فتح النموذج مساحة العمل بنفسه، يُحفظ معرّفها
-                        // فيُعاد استخدامه لأدوات القراءة بدل فتح ثانية.
+                        // فيُعاد استخدامه لأدوات الجلسة بدل فتح ثانية.
                         if (parsed.tool == TOOL_WORKSPACE_OPEN) {
                             McpResults.firstString(
                                 McpResults.dataOf(r), "workspaceId", "workspace_id", "id",
                             )?.takeIf { it.isNotBlank() }?.let { workspaceId = it }
+                        }
+                        // وإن أنشأ جلسة تعديل، يُحفظ معرّفها ويُحقن في
+                        // أدوات الجلسة بعدها بدل الجلسة الفارغة.
+                        if (parsed.tool == TOOL_SESSION_CREATE) {
+                            McpResults.firstString(
+                                McpResults.dataOf(r), "editSessionId", "sessionId", "id",
+                            )?.takeIf { it.isNotBlank() }?.let { editSessionId = it }
                         }
                         r
                     } catch (e: McpException) {

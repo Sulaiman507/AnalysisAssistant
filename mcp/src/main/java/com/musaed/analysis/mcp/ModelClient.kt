@@ -76,6 +76,11 @@ class ModelClient(
         return contentOf(raw)
     }
 
+    /** يقطع الاتصال الجاري مع المزوّد فوراً (زر «إيقاف إجباري»). */
+    fun cancelActive() {
+        ActiveHttp.cancel()
+    }
+
     /** يسرد نماذج المزوّد (GET /models) — لاختيار النموذج من القائمة الفعلية. */
     fun listModels(): List<String> {
         require(config.apiKey.isNotBlank()) { "لا يوجد مفتاح API — أدخل مفتاح المزوّد في الإعدادات أولاً." }
@@ -157,6 +162,7 @@ class ModelClient(
                     setRequestProperty("Content-Type", "application/json")
                 }
             }
+            ActiveHttp.connection = conn
             try {
                 if (body != null) {
                     conn.outputStream.use { it.write(body.toByteArray(StandardCharsets.UTF_8)) }
@@ -176,6 +182,7 @@ class ModelClient(
             } catch (e: java.net.SocketTimeoutException) {
                 throw ModelException("انتهت مهلة الاتصال بالمزوّد $url.", e)
             } finally {
+                if (ActiveHttp.connection === conn) ActiveHttp.connection = null
                 conn.disconnect()
             }
         }

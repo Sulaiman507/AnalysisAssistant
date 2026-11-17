@@ -24,7 +24,7 @@ class McpClient(
         const val DEFAULT_URL = "http://127.0.0.1:8787/mcp"
         const val PROTOCOL_VERSION = "2025-03-26"
         const val CLIENT_NAME = "musaed-analysis-probe"
-        const val CLIENT_VERSION = "0.1.17-picker-home"
+        const val CLIENT_VERSION = "0.1.18-chat-unlimited"
     }
 
     private var sessionId: String? = null
@@ -146,6 +146,11 @@ class McpClient(
 
     private data class HttpResult(val status: Int, val contentType: String?, val body: String)
 
+    /** يقطع الاتصال الجاري مع الخدمة فوراً (زر «إيقاف إجباري»). */
+    fun cancelActive() {
+        ActiveHttp.cancel()
+    }
+
     private fun postJson(json: String): HttpResult {
         val url = URI.create(baseUrl).toURL()
         val conn = (url.openConnection() as HttpURLConnection).apply {
@@ -157,6 +162,7 @@ class McpClient(
             setRequestProperty("Accept", "application/json, text/event-stream")
             sessionId?.let { setRequestProperty("Mcp-Session-Id", it) }
         }
+        ActiveHttp.connection = conn
         try {
             conn.outputStream.use { it.write(json.toByteArray(StandardCharsets.UTF_8)) }
             val status = conn.responseCode
@@ -171,6 +177,7 @@ class McpClient(
         } catch (e: java.net.SocketTimeoutException) {
             throw McpException("انتهت مهلة الاتصال بخدمة MCP على $baseUrl", e)
         } finally {
+            if (ActiveHttp.connection === conn) ActiveHttp.connection = null
             conn.disconnect()
         }
     }

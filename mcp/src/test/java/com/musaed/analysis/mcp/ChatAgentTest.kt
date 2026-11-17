@@ -26,6 +26,10 @@ class ChatAgentTest {
             ),
             "mt_apk_workspace_open" to FakeMcp.toolResult("""{"data":{"workspaceId":"ws-1"}}"""),
             "mt_apk_dex_read_class_outline" to FakeMcp.toolResult(outline),
+            "mt_apk_patch_bytes" to FakeMcp.toolResult("""{"data":{"ok":true}}"""),
+            "mt_apk_session_create" to FakeMcp.toolResult("""{"data":{"editSessionId":"es-9"}}"""),
+            "mt_apk_edit_text" to FakeMcp.toolResult("""{"data":{"ok":true}}"""),
+            "mt_file_list" to FakeMcp.toolResult("""{"data":{"items":[]}}"""),
         ),
     )
 
@@ -71,16 +75,96 @@ class ChatAgentTest {
     }
 
     @Test
-    fun `mutating tool is rejected locally without a server call`() {
+    fun `mutating tool is now executed, not rejected`() {
+        // بلا حدود بقرار سليمان 2026-11-17: أدوات التعديل مسموحة في المحادثة.
         val patchAction =
-            """{"tool": "mt_apk_patch_bytes", "arguments": {"workspaceId": "ws-1", "editSessionId": ""}}"""
-        val model = FakeModel(listOf(patchAction, "عذراً، لا أستطيع التعديل من المحادثة."))
+            """{"tool": "mt_apk_patch_bytes", "arguments": {"workspaceId": "ws-1", "editSessionId": "", "locator": "zip_entry:classes.dex", "patches": []}}"""
+        val model = FakeModel(listOf(patchAction, "تم التعديل."))
         val (agent, _, server) = makeAgent(model)
         val session = ChatSession()
         val outcome = agent.respond(session, "عدّل الدالة")
         assertTrue(outcome is ChatOutcome.Answer)
-        assertTrue(server.calls.none { it.first == "mt_apk_patch_bytes" })
+        assertTrue(server.calls.any { it.first == "mt_apk_patch_bytes" })
+    }
+
+    @Test
+    fun `unknown tool is rejected locally without a server call`() {
+        val fakeAction =
+            """{"tool": "mt_apk_frobnicate", "arguments": {}}"""
+        val model = FakeModel(listOf(fakeAction, "هذه الأداة غير موجودة."))
+        val (agent, _, server) = makeAgent(model)
+        val session = ChatSession()
+        val outcome = agent.respond(session, "افعل شيئاً")
+        assertTrue(outcome is ChatOutcome.Answer)
         assertTrue(server.calls.isEmpty())
+    }
+
+    @Test
+    fun `requestStop before respond returns Stopped without model calls`() {
+        var calls = 0
+        val chatFn: (List<ChatMessage>) -> String = {
+            calls++
+            "أهلاً."
+        }
+        val server = chatServer()
+        val log = SessionLog()
+        val runner = ToolRunner(server::call, log, timeoutMs = 5_000)
+        val agent = ChatAgent(chatFn, runner, "com.musaed.test.clear", null)
+        agent.requestStop()
+        val outcome = agent.respond(ChatSession(), "مرحباً")
+        assertTrue(outcome is ChatOutcome.Stopped)
+        assertEquals(0, calls)
+        assertTrue(server.calls.isEmpty())
+    }
+
+    @Test
+    fun `stop requested mid conversation ends with Stopped`() {
+        var agentBox: ChatAgent? = null
+        var calls = 0
+        val chatFn: (List<ChatMessage>) -> String = {
+            calls++
+            if (calls == 2) agentBox?.requestStop()
+            outlineAction
+        }
+        val server = chatServer()
+        val log = SessionLog()
+        val runner = ToolRunner(server::call, log, timeoutMs = 5_000)
+        val agent = ChatAgent(chatFn, runner, "com.musaed.test.clear", null, maxToolSteps = Int.MAX_VALUE)
+        agentBox = agent
+        val outcome = agent.respond(ChatSession(), "اشرح كل شيء")
+        assertTrue(outcome is ChatOutcome.Stopped)
+        assertEquals(2, calls)
+    }
+
+    @Test
+    fun `session_create result is reused as edit session id`() {
+        val createAction =
+            """{"tool": "mt_apk_session_create", "arguments": {}}"""
+        val editAction =
+            """{"tool": "mt_apk_edit_text", "arguments": {"locator": "dex_class:com/musaed/test/obfuscated/a;", "targetVersion": 1, "edits": []}}"""
+        val model = FakeModel(listOf(createAction, editAction, "تم التعديل في الجلسة."))
+        val (agent, _, server) = makeAgent(model)
+        val session = ChatSession()
+        val outcome = agent.respond(session, "عدّل الكلاس")
+        assertTrue(outcome is ChatOutcome.Answer)
+        val edit = server.calls.single { it.first == "mt_apk_edit_text" }
+        assertEquals("ws-1", edit.second.get("workspaceId").asString)
+        assertEquals("es-9", edit.second.get("editSessionId").asString)
+    }
+
+    @Test
+    fun `file tool is sent without injected workspace args`() {
+        val listAction =
+            """{"tool": "mt_file_list", "arguments": {"path": "Download/edit-apps", "recursive": false, "cursor": "", "limit": 50}}"""
+        val model = FakeModel(listOf(listAction, "المجلد فارغ."))
+        val (agent, _, server) = makeAgent(model)
+        val session = ChatSession()
+        val outcome = agent.respond(session, "ماذا في المجلد؟")
+        assertTrue(outcome is ChatOutcome.Answer)
+        val call = server.calls.single { it.first == "mt_file_list" }
+        assertTrue(!call.second.has("workspaceId"))
+        assertTrue(!call.second.has("editSessionId"))
+        assertTrue(server.calls.none { it.first == "mt_apk_workspace_open" })
     }
 
     @Test
@@ -107,7 +191,7 @@ class ChatAgentTest {
     @Test
     fun `tool step cap ends with a cap message`() {
         val model = FakeModel(List(8) { outlineAction })
-        val (agent, _, server) = makeAgent(model)
+        val (agent, _, server) = makeAgent(model, maxToolSteps = 5)
         val session = ChatSession()
         val outcome = agent.respond(session, "اشرح كل شيء")
         assertTrue(outcome is ChatOutcome.Answer)

@@ -1116,21 +1116,22 @@ class MainActivity : Activity() {
     }
 
     private fun settingsFromFields(): ProviderSettings {
-        val name = providerNameInput.text.toString().trim()
-        val rawBase = baseUrlInput.text.toString().trim()
-        return ProviderSettings(
-            name = name,
+        val settings = ProviderSettings(
+            name = providerNameInput.text.toString().trim(),
             apiKey = apiKeyInput.text.toString().trim(),
-            // المزوّد المخصص وحده يوحّد رابطه (يضيف ‎/v1 إن غاب)؛
-            // الإعدادات الجاهزة روابطها ثابتة صحيحة أصلاً فلا تُمس.
-            baseUrl = if (name == ProviderSettings.CUSTOM_NAME) {
-                ProviderSettings.normalizeBaseUrl(rawBase)
-            } else {
-                rawBase
-            },
+            baseUrl = baseUrlInput.text.toString().trim(),
             apiPath = apiPathInput.text.toString().trim().ifBlank { "/chat/completions" },
             model = modelInput.text.toString().trim(),
         )
+        // المزوّد المخصص وحده يوحّد رابطه (يضيف ‎/v1 إن غاب)؛
+        // الإعدادات الجاهزة روابطها ثابتة صحيحة أصلاً فلا تُمس.
+        // «مخصص» هنا أي اسم ليس إعداداً جاهزاً — لا الاسم الحرفي «مخصص»
+        // وحده — لأن المستخدم قد يسمّي مزوده «OpenRouter» مثلاً.
+        return if (settings.isCustom) {
+            settings.copy(baseUrl = ProviderSettings.normalizeBaseUrl(settings.baseUrl))
+        } else {
+            settings
+        }
     }
 
     /** يطبّق إعداداً جاهزاً (DeepSeek أو GonkaRouter) مع إبقاء المفتاح المدخل. */
@@ -1144,7 +1145,7 @@ class MainActivity : Activity() {
     private fun saveProviderSettings() {
         providerSettings = settingsFromFields()
         // أظهر الرابط الموحّد في الحقل نفسه حتى يتطابق مع المحفوظ.
-        if (providerSettings.name == ProviderSettings.CUSTOM_NAME) {
+        if (providerSettings.isCustom) {
             baseUrlInput.setText(providerSettings.baseUrl)
         }
         getSharedPreferences("musaed_analysis", Context.MODE_PRIVATE)
@@ -1160,7 +1161,7 @@ class MainActivity : Activity() {
         // تُجلب النماذج تلقائياً من ‎/models وتُعرض للاختيار؛ فلا يحتاج
         // لضغطة «جلب النماذج» منفصلة. لا تتكرر: اختيار النموذج من القائمة
         // يملأ حقل النموذج ثم يحفظ، فيصبح النموذج غير فارغ فلا يُعاد الجلب.
-        if (providerSettings.name == ProviderSettings.CUSTOM_NAME &&
+        if (providerSettings.isCustom &&
             providerSettings.model.isBlank() && !fetchingModels
         ) {
             fetchModels()

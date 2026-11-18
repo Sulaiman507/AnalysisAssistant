@@ -67,6 +67,38 @@ class ProviderSettingsTest {
     }
 
     @Test
+    fun `isCustom is true for any non-preset name`() {
+        assertTrue(ProviderSettings.custom().isCustom)
+        assertTrue(
+            ProviderSettings(
+                name = "OpenRouter",
+                apiKey = "sk-x",
+                baseUrl = "https://openrouter.ai/api/v1",
+                apiPath = "/chat/completions",
+                model = "x/y",
+            ).isCustom,
+        )
+        assertFalse(ProviderSettings.deepSeek().isCustom)
+        assertFalse(ProviderSettings.gonkaRouter().isCustom)
+        assertFalse(ProviderSettings.zro().isCustom)
+    }
+
+    @Test
+    fun `custom provider named OpenRouter normalizes base url and stays unconfigured until a model is picked`() {
+        val s = ProviderSettings(
+            name = "OpenRouter",
+            apiKey = "sk-x",
+            baseUrl = ProviderSettings.normalizeBaseUrl("https://openrouter.ai/api"),
+            apiPath = "/chat/completions",
+            model = "",
+        )
+        assertTrue(s.isCustom)
+        assertEquals("https://openrouter.ai/api/v1", s.baseUrl)
+        assertFalse(s.isConfigured())
+        assertTrue(s.copy(model = "openai/gpt-6.2").isConfigured())
+    }
+
+    @Test
     fun `json round trip preserves all fields`() {
         val s = ProviderSettings.gonkaRouter("gk-secret")
         val restored = ProviderSettings.fromJson(s.toJson())

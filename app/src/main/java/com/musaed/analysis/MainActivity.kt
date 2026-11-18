@@ -85,6 +85,8 @@ class MainActivity : Activity() {
     private lateinit var analysisButton: Button
     private lateinit var settingsStatus: TextView
     private var providerSettings: ProviderSettings = ProviderSettings.deepSeek()
+    // جلب نماذج جارٍ الآن — يمنع جلباً تلقائياً مكرراً عند حفظ سريع متتابع.
+    private var fetchingModels = false
 
     // المحادثة مع النموذج: تُحفظ على الجهاز فقط، وآخر تقرير تحليل يُمرَّر
     // كسياق للنموذج حتى يشرح منه. سجل أدوات المحادثة منفصل عن سجل التحليل.
@@ -292,7 +294,19 @@ class MainActivity : Activity() {
         val presetZro = styledButton(getString(R.string.settings_preset_zro), false).apply {
             setOnClickListener { applyProviderPreset(ProviderSettings.zro(apiKeyInput.text.toString().trim())) }
         }
-        settingsCard.addView(buttonRow(presetDeepSeek, presetGonka, presetZro))
+        val presetCustom = styledButton(getString(R.string.settings_preset_custom), false).apply {
+            // «مخصص» يحافظ على الرابط المكتوب في الحقل (إن وُجد) ويوحّده،
+            // ولا يمسحه كما تفعل الإعدادات الجاهزة بروابطها الثابتة.
+            setOnClickListener {
+                applyProviderPreset(
+                    ProviderSettings.custom(
+                        apiKeyInput.text.toString().trim(),
+                        baseUrlInput.text.toString().trim(),
+                    ),
+                )
+            }
+        }
+        settingsCard.addView(buttonRow(presetDeepSeek, presetGonka, presetZro, presetCustom))
         settingsCard.addView(fieldLabel(getString(R.string.settings_name_label)))
         providerNameInput = styledField(getString(R.string.settings_name_hint))
         settingsCard.addView(providerNameInput)
@@ -1102,10 +1116,18 @@ class MainActivity : Activity() {
     }
 
     private fun settingsFromFields(): ProviderSettings {
+        val name = providerNameInput.text.toString().trim()
+        val rawBase = baseUrlInput.text.toString().trim()
         return ProviderSettings(
-            name = providerNameInput.text.toString().trim(),
+            name = name,
             apiKey = apiKeyInput.text.toString().trim(),
-            baseUrl = baseUrlInput.text.toString().trim(),
+            // المزوّد المخصص وحده يوحّد رابطه (يضيف ‎/v1 إن غاب)؛
+            // الإعدادات الجاهزة روابطها ثابتة صحيحة أصلاً فلا تُمس.
+            baseUrl = if (name == ProviderSettings.CUSTOM_NAME) {
+                ProviderSettings.normalizeBaseUrl(rawBase)
+            } else {
+                rawBase
+            },
             apiPath = apiPathInput.text.toString().trim().ifBlank { "/chat/completions" },
             model = modelInput.text.toString().trim(),
         )
@@ -1121,6 +1143,10 @@ class MainActivity : Activity() {
     /** يحفظ إعدادات المزوّد في الجهاز فقط. */
     private fun saveProviderSettings() {
         providerSettings = settingsFromFields()
+        // أظهر الرابط الموحّد في الحقل نفسه حتى يتطابق مع المحفوظ.
+        if (providerSettings.name == ProviderSettings.CUSTOM_NAME) {
+            baseUrlInput.setText(providerSettings.baseUrl)
+        }
         getSharedPreferences("musaed_analysis", Context.MODE_PRIVATE)
             .edit()
             .putString("provider_settings", providerSettings.toJson())
@@ -1129,6 +1155,15 @@ class MainActivity : Activity() {
             getString(R.string.settings_saved, providerSettings.name, providerSettings.model)
         } else {
             getString(R.string.settings_saved_incomplete)
+        }
+        // المزوّد المخصص: بعد الحفظ مباشرة — وقبل أن يختار نموذجاً —
+        // تُجلب النماذج تلقائياً من ‎/models وتُعرض للاختيار؛ فلا يحتاج
+        // لضغطة «جلب النماذج» منفصلة. لا تتكرر: اختيار النموذج من القائمة
+        // يملأ حقل النموذج ثم يحفظ، فيصبح النموذج غير فارغ فلا يُعاد الجلب.
+        if (providerSettings.name == ProviderSettings.CUSTOM_NAME &&
+            providerSettings.model.isBlank() && !fetchingModels
+        ) {
+            fetchModels()
         }
     }
 
@@ -1139,6 +1174,12 @@ class MainActivity : Activity() {
             settingsStatus.text = getString(R.string.settings_no_key)
             return
         }
+        if (!(settings.baseUrl.startsWith("https://") || settings.baseUrl.startsWith("http://"))) {
+            settingsStatus.text = getString(R.string.settings_bad_url)
+            return
+        }
+        if (fetchingModels) return
+        fetchingModels = true
         fetchModelsButton.isEnabled = false
         settingsStatus.text = getString(R.string.settings_fetching)
         resetResults()
@@ -1147,6 +1188,7 @@ class MainActivity : Activity() {
                 val client = ModelClient(settings.toModelConfig())
                 val models = client.listModels()
                 runOnUiThread {
+                    fetchingModels = false
                     fetchModelsButton.isEnabled = true
                     if (models.isEmpty()) {
                         settingsStatus.text = getString(R.string.settings_no_models, settings.name)
@@ -1158,6 +1200,7 @@ class MainActivity : Activity() {
                 }
             } catch (e: Exception) {
                 runOnUiThread {
+                    fetchingModels = false
                     fetchModelsButton.isEnabled = true
                     settingsStatus.text = getString(R.string.settings_fetch_failed, e.message ?: e.toString())
                 }

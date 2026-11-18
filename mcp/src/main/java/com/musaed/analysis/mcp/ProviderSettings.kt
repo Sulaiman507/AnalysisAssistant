@@ -19,6 +19,34 @@ data class ProviderSettings(
     val model: String,
 ) {
     companion object {
+        /** اسم المزوّد المخصص — يكتبه المستخدم بنفسه من الرابط والمفتاح. */
+        const val CUSTOM_NAME = "مخصص"
+
+        /**
+         * يوحّد رابط مزوّد مخصص: يزيل الفراغات والشرطة الأخيرة، ويضيف ‎/v1
+         * إن لم يكن موجوداً — لأن معظم الواجهات المتوافقة مع OpenAI تعيش
+         * تحت ‎/v1 (قائمة النماذج GET ‎/v1/models والمحادثة ‎/v1/chat/completions)،
+         * والمستخدم غالباً يلصق الرابط بلا ‎/v1 فينسى إضافته.
+         */
+        fun normalizeBaseUrl(raw: String): String {
+            val trimmed = raw.trim().trimEnd('/')
+            if (trimmed.isEmpty()) return ""
+            return if (trimmed.endsWith("/v1")) trimmed else "$trimmed/v1"
+        }
+
+        /**
+         * مزوّد مخصص — يضيفه المستخدم من المفتاح والرابط: الاسم «مخصص»،
+         * والمسار ‎/chat/completions، والنموذج فارغ عمداً لأن التطبيق
+         * يجلبه تلقائياً من قائمة النماذج (GET /models) بعد الحفظ.
+         */
+        fun custom(apiKey: String = "", baseUrl: String = "") = ProviderSettings(
+            name = CUSTOM_NAME,
+            apiKey = apiKey,
+            baseUrl = normalizeBaseUrl(baseUrl),
+            apiPath = "/chat/completions",
+            model = "",
+        )
+
         /** DeepSeek — الافتراضي (كما في القرارات المثبّتة). */
         fun deepSeek(apiKey: String = "") = ProviderSettings(
             name = "DeepSeek",

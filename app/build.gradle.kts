@@ -12,8 +12,8 @@ android {
         applicationId = "com.musaed.analysis"
         minSdk = 26
         targetSdk = 36
-        versionCode = 20
-        versionName = "0.1.19-zro-picker"
+        versionCode = 21
+        versionName = "0.1.20-custom-provider"
     }
 
     buildTypes {

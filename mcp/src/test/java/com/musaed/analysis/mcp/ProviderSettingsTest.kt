@@ -42,6 +42,31 @@ class ProviderSettingsTest {
     }
 
     @Test
+    fun `custom provider starts with an empty model to be fetched`() {
+        val s = ProviderSettings.custom("sk-x", "https://api.example.com/v1")
+        assertEquals("مخصص", s.name)
+        assertEquals("https://api.example.com/v1", s.baseUrl)
+        assertEquals("/chat/completions", s.apiPath)
+        assertEquals("", s.model)
+        // بلا نموذج بعد — غير مكتمل حتى يختار النموذج من القائمة المجلوبة.
+        assertFalse(s.isConfigured())
+    }
+
+    @Test
+    fun `custom base url gains v1 when missing`() {
+        assertEquals("https://api.example.com/v1", ProviderSettings.custom(baseUrl = "https://api.example.com").baseUrl)
+        assertEquals("https://api.example.com/v1", ProviderSettings.custom(baseUrl = "https://api.example.com/").baseUrl)
+        assertEquals("https://api.example.com/v1", ProviderSettings.custom(baseUrl = "  https://api.example.com  ").baseUrl)
+    }
+
+    @Test
+    fun `custom base url keeps v1 and strips a trailing slash`() {
+        assertEquals("https://api.example.com/v1", ProviderSettings.custom(baseUrl = "https://api.example.com/v1").baseUrl)
+        assertEquals("https://api.example.com/v1", ProviderSettings.custom(baseUrl = "https://api.example.com/v1/").baseUrl)
+        assertEquals("", ProviderSettings.custom(baseUrl = "").baseUrl)
+    }
+
+    @Test
     fun `json round trip preserves all fields`() {
         val s = ProviderSettings.gonkaRouter("gk-secret")
         val restored = ProviderSettings.fromJson(s.toJson())

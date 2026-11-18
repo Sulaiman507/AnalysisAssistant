@@ -42,6 +42,22 @@ data class ProviderSettings(
             model = "deepseek-ai/DeepSeek-V4-Flash-0731",
         )
 
+        /**
+         * Zro (MoonMath) — كما في مواده الرسمية (zro.moonmath.ai/docs):
+         * Base URL ‏https://zro.moonmath.ai/v1‏، والمسار ‎/chat/completions،
+         * واجهة متوافقة مع OpenAI (GET /models يسرد النماذج). النموذج
+         * الافتراضي DeepSeek V4.1 Flash — النموذج الموصى به لديه، وله
+         * استخدام يومي مجاني. النماذج الحالية أيضاً: glm-5.3 وdolly2-security
+         * وabyss1 — القائمة الفعلية تُجلب بزر «جلب النماذج».
+         */
+        fun zro(apiKey: String = "") = ProviderSettings(
+            name = "Zro",
+            apiKey = apiKey,
+            baseUrl = "https://zro.moonmath.ai/v1",
+            apiPath = "/chat/completions",
+            model = "deepseek-v4.1-flash",
+        )
+
         fun fromJson(json: String?): ProviderSettings? {
             if (json.isNullOrBlank()) return null
             return try {

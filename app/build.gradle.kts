@@ -12,8 +12,8 @@ android {
         applicationId = "com.musaed.analysis"
         minSdk = 26
         targetSdk = 36
-        versionCode = 19
-        versionName = "0.1.18-chat-unlimited"
+        versionCode = 20
+        versionName = "0.1.19-zro-picker"
     }
 
     buildTypes {

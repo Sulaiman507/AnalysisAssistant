@@ -24,6 +24,7 @@
     <string name="settings_title">إعدادات النموذج (المزوّد)</string>
     <string name="settings_preset_deepseek">DeepSeek</string>
     <string name="settings_preset_gonka">GonkaRouter</string>
+    <string name="settings_preset_zro">Zro</string>
     <string name="settings_name_hint">الاسم (مثال: GonkaRouter)</string>
     <string name="settings_key_hint">مفتاح API</string>
     <string name="settings_base_hint">API Base URL (مثال: https://api.gonkarouter.io/v1)</string>
@@ -36,7 +37,9 @@
     <string name="settings_saved_incomplete">حُفظت الإعدادات لكنها غير مكتملة — أدخل المفتاح والنموذج.</string>
     <string name="settings_no_key">أدخل مفتاح API أولاً ثم اجلب النماذج.</string>
     <string name="settings_fetching">جارٍ جلب النماذج…</string>
-    <string name="settings_models">نماذج %1$s (%2$d): اختر واحداً واكتبه في حقل النموذج.</string>
+    <string name="settings_models">نماذج %1$s (%2$d) — اختر نموذجاً من القائمة الظاهرة.</string>
+    <string name="settings_pick_model_title">اختر النموذج</string>
+    <string name="settings_model_picked">تم اختيار %2$s وحفظه — المزوّد %1$s.</string>
     <string name="settings_no_models">لم يرجع %1$s أي نموذج — تحقق من المفتاح وBase URL.</string>
     <string name="settings_fetch_failed">فشل جلب النماذج: %1$s</string>
     <string name="analysis_run">تحليل</string>

@@ -31,6 +31,17 @@ class ProviderSettingsTest {
     }
 
     @Test
+    fun `zro preset matches the official docs`() {
+        val s = ProviderSettings.zro()
+        assertEquals("Zro", s.name)
+        assertEquals("https://zro.moonmath.ai/v1", s.baseUrl)
+        assertEquals("/chat/completions", s.apiPath)
+        assertEquals("deepseek-v4.1-flash", s.model)
+        assertFalse(s.isConfigured())
+        assertTrue(ProviderSettings.zro("zro-x").isConfigured())
+    }
+
+    @Test
     fun `json round trip preserves all fields`() {
         val s = ProviderSettings.gonkaRouter("gk-secret")
         val restored = ProviderSettings.fromJson(s.toJson())

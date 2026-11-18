@@ -1,6 +1,7 @@
 package com.musaed.analysis
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
@@ -288,7 +289,10 @@ class MainActivity : Activity() {
         val presetGonka = styledButton(getString(R.string.settings_preset_gonka), false).apply {
             setOnClickListener { applyProviderPreset(ProviderSettings.gonkaRouter(apiKeyInput.text.toString().trim())) }
         }
-        settingsCard.addView(buttonRow(presetDeepSeek, presetGonka))
+        val presetZro = styledButton(getString(R.string.settings_preset_zro), false).apply {
+            setOnClickListener { applyProviderPreset(ProviderSettings.zro(apiKeyInput.text.toString().trim())) }
+        }
+        settingsCard.addView(buttonRow(presetDeepSeek, presetGonka, presetZro))
         settingsCard.addView(fieldLabel(getString(R.string.settings_name_label)))
         providerNameInput = styledField(getString(R.string.settings_name_hint))
         settingsCard.addView(providerNameInput)
@@ -1147,11 +1151,9 @@ class MainActivity : Activity() {
                     if (models.isEmpty()) {
                         settingsStatus.text = getString(R.string.settings_no_models, settings.name)
                     } else {
-                        if (modelInput.text.toString().isBlank()) {
-                            modelInput.setText(models[0])
-                        }
                         settingsStatus.text = getString(R.string.settings_models, settings.name, models.size)
                         resultView.text = models.joinToString("\n") { "• $it" }
+                        showModelPicker(models)
                     }
                 }
             } catch (e: Exception) {
@@ -1161,6 +1163,19 @@ class MainActivity : Activity() {
                 }
             }
         }
+    }
+
+    /** يعرض نماذج المزوّد في قائمة اختيار — الضغطة تملأ حقل النموذج وتحفظه فوراً. */
+    private fun showModelPicker(models: List<String>) {
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.settings_pick_model_title))
+            .setItems(models.toTypedArray()) { _, which ->
+                modelInput.setText(models[which])
+                saveProviderSettings()
+                settingsStatus.text = getString(R.string.settings_model_picked, providerSettings.name, models[which])
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     /** التحليل الكامل (المرحلة 3): الفحص السريع ثم حلقة الوكيل ببرومبت v1.1.

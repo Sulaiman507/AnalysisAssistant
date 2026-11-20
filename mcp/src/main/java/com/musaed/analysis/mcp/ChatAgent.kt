@@ -326,6 +326,9 @@ class ChatAgent(
 
     /** يفسّر رد النموذج: نص عادي، أو أداة قراءة، أو طلب تحليل كامل. */
     internal fun parseReply(reply: String): Parsed {
+        // صيغة DSML أولاً: وإلا وجد مستخرج JSON كائن المعاملات الداخلي
+        // وحده (بلا مفتاح tool) فصنّف الرد نصاً عادياً وظهر خاماً.
+        DsmlParser.parse(reply)?.let { return Parsed.ToolCall(it.tool, it.arguments) }
         val jsonText = extractJson(reply) ?: return Parsed.Text
         val obj = try {
             JsonParser.parseString(jsonText).asJsonObject

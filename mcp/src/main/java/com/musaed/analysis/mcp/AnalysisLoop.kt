@@ -208,6 +208,9 @@ class AnalysisLoop(
 
     /** يستخرج إجراء النموذج من ردّه: أداة أو تقرير نهائي أو غير صالح. */
     internal fun parseAction(reply: String): Action {
+        // صيغة DSML أولاً: وإلا وجد الفصل المتوازن كائن المعاملات الداخلي
+        // وحده (بلا مفتاح tool) فحُسب الرد غير صالح.
+        DsmlParser.parse(reply)?.let { return Action.ToolCall(it.tool, it.arguments) }
         val split = ReportSplit.split(reply) ?: return Action.Malformed
         val jsonText = split.first
         val obj = try {

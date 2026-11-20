@@ -65,7 +65,7 @@ echo "=== 3) اختبارات وحدة MCP ==="
   -cp "$GSON:$WORK/mcp.jar:$JUNIT:$HAMCREST" \
   -d "$WORK/test-classes" mcp/src/test/java/com/musaed/analysis/mcp/*.kt
 java -cp "$WORK/test-classes:$WORK/mcp.jar:$GSON:$JUNIT:$HAMCREST:$STDLIB" \
-  org.junit.runner.JUnitCore com.musaed.analysis.mcp.McpClientTest com.musaed.analysis.mcp.GateTesterTest com.musaed.analysis.mcp.ToolRunnerTest com.musaed.analysis.mcp.ContextBuilderTest com.musaed.analysis.mcp.SessionLogTest com.musaed.analysis.mcp.StressTestTest com.musaed.analysis.mcp.QuickScanTest com.musaed.analysis.mcp.ModelClientTest com.musaed.analysis.mcp.ProviderSettingsTest com.musaed.analysis.mcp.AnalysisLoopTest com.musaed.analysis.mcp.ToolCatalogTest com.musaed.analysis.mcp.McpResultsTest com.musaed.analysis.mcp.ChatSessionTest com.musaed.analysis.mcp.ChatAgentTest com.musaed.analysis.mcp.ChatPromptTest com.musaed.analysis.mcp.ReportSplitTest com.musaed.analysis.mcp.ReportViewTest com.musaed.analysis.mcp.AnalysisStoreTest
+  org.junit.runner.JUnitCore com.musaed.analysis.mcp.McpClientTest com.musaed.analysis.mcp.GateTesterTest com.musaed.analysis.mcp.ToolRunnerTest com.musaed.analysis.mcp.ContextBuilderTest com.musaed.analysis.mcp.SessionLogTest com.musaed.analysis.mcp.StressTestTest com.musaed.analysis.mcp.QuickScanTest com.musaed.analysis.mcp.ModelClientTest com.musaed.analysis.mcp.ProviderSettingsTest com.musaed.analysis.mcp.AnalysisLoopTest com.musaed.analysis.mcp.ToolCatalogTest com.musaed.analysis.mcp.McpResultsTest com.musaed.analysis.mcp.ChatSessionTest com.musaed.analysis.mcp.ChatAgentTest com.musaed.analysis.mcp.ChatPromptTest com.musaed.analysis.mcp.ReportSplitTest com.musaed.analysis.mcp.ReportViewTest com.musaed.analysis.mcp.AnalysisStoreTest com.musaed.analysis.mcp.DsmlParserTest
 
 echo "=== 4) فحص العميل ضد خادم وهمي (JSON + SSE) — متخطى في هذه الحاوية ==="
 echo "SKIP: الـ sandbox يمنع اتصالات TCP المباشرة من عمليات JVM في هذه الحاوية"
@@ -85,7 +85,7 @@ sed -e 's|<manifest xmlns:android="http://schemas.android.com/apk/res/android">|
 "$BT/aapt2" link -o "$WORK/unsigned.apk" -I "$ANDROID_JAR" \
   --manifest "$WORK/AndroidManifest.xml" \
   --min-sdk-version 26 --target-sdk-version 36 \
-  --version-code 22 --version-name 0.1.21-custom-name-fix \
+  --version-code 23 --version-name 0.1.22-dsml \
   --java "$WORK/generated" \
   "$WORK/res.zip"
 "$KOTLINC" -jvm-target 17 \

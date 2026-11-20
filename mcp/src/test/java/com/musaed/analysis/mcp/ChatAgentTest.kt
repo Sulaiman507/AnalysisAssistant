@@ -25,6 +25,7 @@ class ChatAgentTest {
                 """{"data":{"items":[{"path":"/data/app/com.musaed.test.clear/base.apk","packageName":"com.musaed.test.clear"}]}}"""
             ),
             "mt_apk_workspace_open" to FakeMcp.toolResult("""{"data":{"workspaceId":"ws-1"}}"""),
+            "mt_apk_search" to FakeMcp.toolResult("""{"data":{"hits":[]}}"""),
             "mt_apk_dex_read_class_outline" to FakeMcp.toolResult(outline),
             "mt_apk_patch_bytes" to FakeMcp.toolResult("""{"data":{"ok":true}}"""),
             "mt_apk_session_create" to FakeMcp.toolResult("""{"data":{"editSessionId":"es-9"}}"""),
@@ -92,6 +93,42 @@ class ChatAgentTest {
         val fakeAction =
             """{"tool": "mt_apk_frobnicate", "arguments": {}}"""
         val model = FakeModel(listOf(fakeAction, "هذه الأداة غير موجودة."))
+        val (agent, _, server) = makeAgent(model)
+        val session = ChatSession()
+        val outcome = agent.respond(session, "افعل شيئاً")
+        assertTrue(outcome is ChatOutcome.Answer)
+        assertTrue(server.calls.isEmpty())
+    }
+
+    /** صيغة DSML من لقطة سليمان 2026-11-20: تُنفَّذ كاستدعاء JSON عادي، بلا عرض خام. */
+    private val dsmlSearch = """
+        <|DSML| calls |>
+        <|DSML| invoke name="mt_apk_search">
+        <|DSML| parameter name="arguments" string="true">{"target": "dex_strings", "query": "premium", "queryType": "literal", "caseSensitive": false, "matchMode": "contains", "prefix": "Lcom/hecorat/", "includeMatchOffsets": false, "limit": 60, "snippetMaxChars": 200}</|DSML| parameter>
+        </|DSML| invoke>
+        </|DSML| calls|>
+    """.trimIndent()
+
+    @Test
+    fun `dsml tool call is executed like a json call`() {
+        val model = FakeModel(listOf(dsmlSearch, "بحثت عن premium ولم أجد نتائج."))
+        val (agent, _, server) = makeAgent(model)
+        val session = ChatSession()
+        val outcome = agent.respond(session, "ابحث عن premium")
+        assertTrue(outcome is ChatOutcome.Answer)
+        assertTrue((outcome as ChatOutcome.Answer).text.contains("premium"))
+        assertTrue(server.calls.any { it.first == "mt_apk_search" })
+        // الرد الخام لا يظهر في المحادثة — الجواب النصي فقط
+        assertTrue(session.turns().none { it.content.contains("DSML") })
+    }
+
+    @Test
+    fun `dsml reply with unknown tool is rejected locally`() {
+        val dsmlUnknown = """
+            <|DSML| invoke name="mt_apk_frobnicate">
+            <|DSML| parameter name="arguments" string="true">{}</|DSML| parameter>
+        """.trimIndent()
+        val model = FakeModel(listOf(dsmlUnknown, "هذه الأداة غير موجودة."))
         val (agent, _, server) = makeAgent(model)
         val session = ChatSession()
         val outcome = agent.respond(session, "افعل شيئاً")

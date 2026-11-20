@@ -182,6 +182,42 @@ class AnalysisLoopTest {
         assertEquals("ToolCall", action.javaClass.simpleName)
     }
 
+    /** صيغة DSML من لقطة سليمان 2026-11-20 (بحث premium). */
+    private val dsmlSearch = """
+        <|DSML| calls |>
+        <|DSML| invoke name="mt_apk_search">
+        <|DSML| parameter name="arguments" string="true">{"target": "dex_strings", "query": "premium", "queryType": "literal", "caseSensitive": false, "matchMode": "contains", "prefix": "Lcom/hecorat/", "includeMatchOffsets": false, "limit": 60, "snippetMaxChars": 200}</|DSML| parameter>
+        </|DSML| invoke>
+        </|DSML| calls|>
+    """.trimIndent()
+
+    @Test
+    fun `parses dsml tool call`() {
+        val model = FakeModel(emptyList())
+        val (loop, _) = makeLoop(model)
+        val action = loop.parseAction(dsmlSearch)
+        assertEquals("ToolCall", action.javaClass.simpleName)
+        val call = action as AnalysisLoop.Action.ToolCall
+        assertEquals("mt_apk_search", call.tool)
+        assertEquals("premium", call.arguments.get("query").asString)
+        assertEquals("Lcom/hecorat/", call.arguments.get("prefix").asString)
+    }
+
+    @Test
+    fun `dsml reply is not counted as malformed`() {
+        val dsmlOutline = """
+            <|DSML| invoke name="mt_apk_dex_read_class_outline">
+            <|DSML| parameter name="arguments" string="true">{"workspaceId": "ws-1", "editSessionId": "", "locator": "dex_class:com/musaed/test/clear/PremiumGate;"}</|DSML| parameter>
+            </|DSML| invoke>
+        """.trimIndent()
+        val model = FakeModel(listOf(dsmlOutline, outlineAction, finalReport))
+        val (loop, _) = makeLoop(model)
+        val result = loop.run("com.musaed.test.clear")
+        assertTrue(result.success)
+        assertEquals(3, result.stepsUsed)
+        assertTrue(result.notes.none { it.contains("غير صالح") })
+    }
+
     @Test
     fun `rejects non-mt tools and garbage`() {
         val model = FakeModel(emptyList())

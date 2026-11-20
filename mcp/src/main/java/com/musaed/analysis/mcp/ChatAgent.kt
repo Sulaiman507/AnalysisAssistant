@@ -4,21 +4,20 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 
-/** نتيجة رسالة محادثة واحدة: جواب نصي، أو طلب بدء التحليل الكامل، أو إيقاف إجباري. */
+/** نتيجة رسالة محادثة واحدة: جواب نصي، أو إيقاف إجباري. */
 sealed interface ChatOutcome {
     data class Answer(val text: String) : ChatOutcome
-    data class RunAnalysis(val instructions: String) : ChatOutcome
     data object Stopped : ChatOutcome
 }
 
 /**
- * وكيل المحادثة (ميزة المحادثة): رسالة مستخدم ← (قراءة كود عند الحاجة)
- * ← جواب نصي؛ أو طلب «نفّذ» فيُعاد للتحليل الكامل.
+ * وكيل المحادثة — المسار الوحيد في التطبيق (2026-11-20): حلقة التحليل
+ * حُذفت بقرار سليمان، فالمحادثة تنفّذ كل شيء مباشرة — قراءة أو تحليلاً
+ * أو تعديلاً أو بناءً أو تثبيتاً — وتجيب نصاً.
  *
  * عقد الردود مع النموذج (مطابق لبرومبت المحادثة):
  *  - نص عادي = الجواب النهائي لهذه الرسالة.
- *  - {"tool": "<أداة قراءة>", "arguments": {...}} = خطوة قراءة واحدة.
- *  - {"action": "run_analysis"} = المستخدم طلب بدء التحليل الكامل.
+ *  - {"tool": "<أداة>", "arguments": {...}} = خطوة أداة واحدة.
  * ويُقبل «name» بدلاً من «tool» و«args»/«params» بدلاً من «arguments»،
  * وتُستخرج كتلة JSON الأولى إن لفّ النموذج ردّه بنص أو بسياج ```json.
  *
@@ -49,7 +48,6 @@ class ChatAgent(
     private val chat: (List<ChatMessage>) -> String,
     private val runner: ToolRunner,
     private val targetPackage: String?,
-    private val lastReportSummary: String?,
     private val systemPrompt: String = ChatPrompt.TEXT,
     private val maxToolSteps: Int = 5,
 ) {
@@ -209,11 +207,6 @@ class ChatAgent(
                     session.addModel(reply)
                     return ChatOutcome.Answer(reply)
                 }
-                is Parsed.RunAnalysis -> {
-                    val confirm = "حاضر — أبدأ التحليل الكامل بتعليمات المحادثة."
-                    session.addModel(confirm)
-                    return ChatOutcome.RunAnalysis(session.instructionsForAnalysis())
-                }
                 is Parsed.ToolCall -> {
                     if (parsed.tool !in ChatPrompt.KNOWN_TOOLS) {
                         messages += ChatMessage(
@@ -312,19 +305,17 @@ class ChatAgent(
                 }
             }
         }
-        val text = "وصلت لحد خطوات القراءة في هذه الرسالة — اسأل سؤالاً أضيق، " +
-            "أو قل «نفّذ» للتحليل الكامل."
+        val text = "وصلت لحد خطوات القراءة في هذه الرسالة — اسأل سؤالاً أضيق."
         session.addModel(text)
         return ChatOutcome.Answer(text)
     }
 
     internal sealed interface Parsed {
         data object Text : Parsed
-        data object RunAnalysis : Parsed
         data class ToolCall(val tool: String, val arguments: JsonObject) : Parsed
     }
 
-    /** يفسّر رد النموذج: نص عادي، أو أداة قراءة، أو طلب تحليل كامل. */
+    /** يفسّر رد النموذج: نص عادي، أو أداة. */
     internal fun parseReply(reply: String): Parsed {
         // صيغة DSML أولاً: وإلا وجد مستخرج JSON كائن المعاملات الداخلي
         // وحده (بلا مفتاح tool) فصنّف الرد نصاً عادياً وظهر خاماً.
@@ -334,11 +325,6 @@ class ChatAgent(
             JsonParser.parseString(jsonText).asJsonObject
         } catch (_: Exception) {
             return Parsed.Text
-        }
-        if (obj.has("action") && obj.get("action").isJsonPrimitive &&
-            obj.get("action").asString == "run_analysis"
-        ) {
-            return Parsed.RunAnalysis
         }
         val tool = firstString(obj, "tool", "name") ?: return Parsed.Text
         if (!tool.startsWith("mt_")) return Parsed.Text
@@ -371,19 +357,13 @@ class ChatAgent(
         return null
     }
 
-    /** سياق المحادثة: البرومبت + الهدف الحالي + ملخص آخر تقرير (إن وجد). */
+    /** سياق المحادثة: البرومبت + الهدف الحالي. */
     private fun systemMessage(): String {
         return buildString {
             append(systemPrompt)
             appendLine()
             appendLine()
             appendLine("التطبيق الهدف الحالي: ${targetPackage ?: "لم يُحدد بعد — اسأل المستخدم عن اسم الحزمة إن احتجت قراءة الكود."}")
-            if (!lastReportSummary.isNullOrBlank()) {
-                appendLine("آخر تقرير تحليل لهذا التطبيق (للشرح منه عند السؤال عنه):")
-                appendLine(lastReportSummary)
-            } else {
-                appendLine("لا يوجد تقرير تحليل بعد لهذا التطبيق.")
-            }
         }
     }
 

@@ -33,18 +33,6 @@ class ChatSessionTest {
     }
 
     @Test
-    fun `instructions contain user turns only`() {
-        val session = ChatSession()
-        session.addUser("ركز على فحص الدفع")
-        session.addModel("تمام، سأركز عليه.")
-        session.addUser("وتجاهل الإعلانات")
-        val instructions = session.instructionsForAnalysis()
-        assertTrue(instructions.contains("ركز على فحص الدفع"))
-        assertTrue(instructions.contains("وتجاهل الإعلانات"))
-        assertTrue(!instructions.contains("تمام، سأركز عليه."))
-    }
-
-    @Test
     fun `json round trip preserves turns`() {
         val session = ChatSession()
         session.addUser("ما البوابة؟")

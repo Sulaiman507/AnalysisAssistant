@@ -42,7 +42,7 @@ class ChatAgentTest {
         val server = chatServer()
         val log = SessionLog()
         val runner = ToolRunner(server::call, log, timeoutMs = 5_000)
-        val agent = ChatAgent(model::chat, runner, target, null, maxToolSteps = maxToolSteps)
+        val agent = ChatAgent(model::chat, runner, target, maxToolSteps = maxToolSteps)
         return Triple(agent, log, server)
     }
 
@@ -146,7 +146,7 @@ class ChatAgentTest {
         val server = chatServer()
         val log = SessionLog()
         val runner = ToolRunner(server::call, log, timeoutMs = 5_000)
-        val agent = ChatAgent(chatFn, runner, "com.musaed.test.clear", null)
+        val agent = ChatAgent(chatFn, runner, "com.musaed.test.clear")
         agent.requestStop()
         val outcome = agent.respond(ChatSession(), "مرحباً")
         assertTrue(outcome is ChatOutcome.Stopped)
@@ -166,7 +166,7 @@ class ChatAgentTest {
         val server = chatServer()
         val log = SessionLog()
         val runner = ToolRunner(server::call, log, timeoutMs = 5_000)
-        val agent = ChatAgent(chatFn, runner, "com.musaed.test.clear", null, maxToolSteps = Int.MAX_VALUE)
+        val agent = ChatAgent(chatFn, runner, "com.musaed.test.clear", maxToolSteps = Int.MAX_VALUE)
         agentBox = agent
         val outcome = agent.respond(ChatSession(), "اشرح كل شيء")
         assertTrue(outcome is ChatOutcome.Stopped)
@@ -205,16 +205,6 @@ class ChatAgentTest {
     }
 
     @Test
-    fun `run analysis action returns instructions`() {
-        val model = FakeModel(listOf("""{"action": "run_analysis"}"""))
-        val (agent, _, _) = makeAgent(model)
-        val session = ChatSession()
-        val outcome = agent.respond(session, "نفّذ")
-        assertTrue(outcome is ChatOutcome.RunAnalysis)
-        assertTrue((outcome as ChatOutcome.RunAnalysis).instructions.contains("نفّذ"))
-    }
-
-    @Test
     fun `no target means the model asks for the package`() {
         val model = FakeModel(listOf(outlineAction, "ما اسم حزمة التطبيق؟"))
         val (agent, _, server) = makeAgent(model, target = null)
@@ -242,7 +232,7 @@ class ChatAgentTest {
         val server = chatServer()
         val log = SessionLog()
         val runner = ToolRunner(server::call, log, timeoutMs = 5_000)
-        val agent = ChatAgent(failingChat, runner, "com.musaed.test.clear", null)
+        val agent = ChatAgent(failingChat, runner, "com.musaed.test.clear")
         val session = ChatSession()
         val outcome = agent.respond(session, "مرحباً")
         assertTrue(outcome is ChatOutcome.Answer)

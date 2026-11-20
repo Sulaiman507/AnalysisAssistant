@@ -48,20 +48,6 @@ class ChatSession {
         }
     }
 
-    /**
-     * تعليمات المستخدم من المحادثة كما تُمرَّر لحلقة التحليل عند «نفّذ»:
-     * رسائل المستخدم وحدها بالترتيب، مقتطعة عند السقف.
-     */
-    fun instructionsForAnalysis(): String {
-        val text = turns.filter { it.role == "user" }
-            .joinToString("\n") { it.content }
-        return if (text.length > MAX_INSTRUCTIONS_CHARS) {
-            text.take(MAX_INSTRUCTIONS_CHARS) + "\n… (اقتُطعت التعليمات)"
-        } else {
-            text
-        }
-    }
-
     fun toJson(): String = Gson().toJson(turns)
 
     companion object {
@@ -70,9 +56,6 @@ class ChatSession {
 
         /** سقف حروف الأدوار المرسلة للنموذج. */
         const val MAX_CHARS_SENT = 12_000
-
-        /** سقف حروف تعليمات المستخدم التي تُمرَّر للتحليل الكامل. */
-        const val MAX_INSTRUCTIONS_CHARS = 4_000
 
         fun fromJson(json: String?): ChatSession {
             val session = ChatSession()

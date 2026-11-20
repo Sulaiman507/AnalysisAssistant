@@ -18,6 +18,10 @@ import com.google.gson.JsonParser
  * الآن يُستخرج اسم الأداة من invoke ومعاملاتها من أول كائن JSON متوازن
  * بعدها، وتُعامل كأي استدعاء JSON عادي — والتحقق من أن الاسم أداة
  * حقيقية يبقى على المتصل (القائمة الحية)، لا على هذا المفسّر.
+ *
+ * ملاحظة 2026-11-20: ماسح الأقواس المتوازنة هنا منقول من ReportSplit
+ * المحذوف مع حلقة التحليل — يحترم السلاسل النصية (مع `\` للهروب)،
+ * فلا يُخطئه قوس داخل قيمة نصية في المعاملات.
  */
 object DsmlParser {
 
@@ -33,12 +37,45 @@ object DsmlParser {
         if (tool.isBlank()) return null
         // أول كائن JSON متوازن بعد وسام invoke هو كائن المعاملات.
         val after = reply.substring(nameMatch.range.last + 1)
-        val jsonText = ReportSplit.split(after)?.first ?: return null
+        val jsonText = extractBalancedJson(after) ?: return null
         val args = try {
             JsonParser.parseString(jsonText).asJsonObject
         } catch (_: Exception) {
             return null
         }
         return ToolCall(tool, args)
+    }
+
+    /** أول كائن JSON مكتمل في النص (مسح أقواس متوازن يحترم السلاسل). */
+    internal fun extractBalancedJson(text: String): String? {
+        val start = text.indexOf('{')
+        if (start < 0) return null
+        var depth = 0
+        var inString = false
+        var escaped = false
+        var i = start
+        while (i < text.length) {
+            val c = text[i]
+            if (inString) {
+                if (escaped) {
+                    escaped = false
+                } else if (c == '\\') {
+                    escaped = true
+                } else if (c == '"') {
+                    inString = false
+                }
+            } else {
+                when (c) {
+                    '"' -> inString = true
+                    '{' -> depth++
+                    '}' -> {
+                        depth--
+                        if (depth == 0) return text.substring(start, i + 1)
+                    }
+                }
+            }
+            i++
+        }
+        return null
     }
 }

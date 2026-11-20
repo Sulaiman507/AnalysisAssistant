@@ -27,9 +27,10 @@ class ChatPromptTest {
     }
 
     @Test
-    fun `prompt states the run analysis contract and no limits`() {
-        assertTrue(ChatPrompt.TEXT.contains("run_analysis"))
+    fun `prompt says the chat itself does full analysis and has no limits`() {
+        assertTrue(ChatPrompt.TEXT.contains("لا يوجد تحليل منفصل"))
         assertTrue(ChatPrompt.TEXT.contains("بلا حدود"))
+        assertTrue(!ChatPrompt.TEXT.contains("run_analysis"))
     }
 
     @Test

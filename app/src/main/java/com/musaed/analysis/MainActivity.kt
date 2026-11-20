@@ -23,14 +23,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import com.google.gson.JsonObject
-import com.musaed.analysis.mcp.AnalysisLoop
-import com.musaed.analysis.mcp.AnalysisResult
-import com.musaed.analysis.mcp.AnalysisStore
 import com.musaed.analysis.mcp.ChatAgent
 import com.musaed.analysis.mcp.ChatOutcome
 import com.musaed.analysis.mcp.ChatSession
 import com.musaed.analysis.mcp.ChatStore
-import com.musaed.analysis.mcp.EvidenceCard
 import com.musaed.analysis.mcp.GateTestStore
 import com.musaed.analysis.mcp.GateTester
 import com.musaed.analysis.mcp.McpClient
@@ -38,12 +34,10 @@ import com.musaed.analysis.mcp.McpException
 import com.musaed.analysis.mcp.ModelClient
 import com.musaed.analysis.mcp.ModelException
 import com.musaed.analysis.mcp.ProviderSettings
-import com.musaed.analysis.mcp.ReportView
 import com.musaed.analysis.mcp.SessionLog
 import com.musaed.analysis.mcp.SessionLogStore
 import com.musaed.analysis.mcp.StressTestStore
 import com.musaed.analysis.mcp.StressTester
-import com.musaed.analysis.mcp.SystemPrompt
 import com.musaed.analysis.mcp.ToolRunner
 import com.musaed.analysis.mcp.ToolsListStore
 import java.io.File
@@ -74,7 +68,7 @@ class MainActivity : Activity() {
     private lateinit var logButton: Button
     private lateinit var shareButton: Button
 
-    // إعدادات مزوّد النموذج (المرحلة 3): تُحفظ في SharedPreferences فقط.
+    // إعدادات مزوّد النموذج: تُحفظ في SharedPreferences فقط.
     private lateinit var providerNameInput: EditText
     private lateinit var apiKeyInput: EditText
     private lateinit var baseUrlInput: EditText
@@ -82,18 +76,15 @@ class MainActivity : Activity() {
     private lateinit var modelInput: EditText
     private lateinit var fetchModelsButton: Button
     private lateinit var saveSettingsButton: Button
-    private lateinit var analysisButton: Button
     private lateinit var settingsStatus: TextView
     private var providerSettings: ProviderSettings = ProviderSettings.deepSeek()
     // جلب نماذج جارٍ الآن — يمنع جلباً تلقائياً مكرراً عند حفظ سريع متتابع.
     private var fetchingModels = false
 
-    // المحادثة مع النموذج: تُحفظ على الجهاز فقط، وآخر تقرير تحليل يُمرَّر
-    // كسياق للنموذج حتى يشرح منه. سجل أدوات المحادثة منفصل عن سجل التحليل.
+    // المحادثة مع النموذج: تُحفظ على الجهاز فقط.
     private lateinit var chatMessagesLayout: LinearLayout
     private lateinit var chatInput: EditText
     private lateinit var chatSendButton: Button
-    private lateinit var chatRunButton: Button
     private lateinit var chatClearButton: Button
     private lateinit var chatStopButton: Button
     private var chatSession = ChatSession()
@@ -103,7 +94,6 @@ class MainActivity : Activity() {
     private var currentChatAgent: ChatAgent? = null
     private var currentChatModel: ModelClient? = null
     private var currentChatMcp: McpClient? = null
-    private var lastReportJson: String? = null
 
     // حد خطوات قراءة المحادثة: يُحفظ في الجهاز، الافتراضي 5،
     // وبلا حد = Int.MAX_VALUE (يختاره المستخدم من تبويب الإعدادات).
@@ -112,14 +102,6 @@ class MainActivity : Activity() {
     private lateinit var chatLimitSaveButton: Button
     private lateinit var chatLimitStatus: TextView
     private var chatMaxToolSteps: Int = ChatAgent.DEFAULT_MAX_TOOL_STEPS
-
-    // حد خطوات التحليل الكامل: يُحفظ في الجهاز، الافتراضي 80،
-    // وبلا حد = Int.MAX_VALUE (يختاره المستخدم من تبويب الإعدادات).
-    private lateinit var analysisLimitInput: EditText
-    private lateinit var analysisUnlimitedCheck: CheckBox
-    private lateinit var analysisLimitSaveButton: Button
-    private lateinit var analysisLimitStatus: TextView
-    private var analysisMaxSteps: Int = AnalysisLoop.DEFAULT_MAX_STEPS
 
     private var lastDir: File? = null
 
@@ -135,11 +117,8 @@ class MainActivity : Activity() {
     private var chosenApkName: String? = null
     private lateinit var apkFileLabel: TextView
 
-    // التقرير المنظّم (المرحلة 5): حاوية تُبنى من جديد مع كل تحليل ناجح،
-    // وresultView يبقى للنتائج النصية البسيطة (قائمة أدوات، بوابة، إجهاد).
+    // النتائج النصية (قائمة أدوات، بوابة، إجهاد، تشخيص).
     private lateinit var resultsContainer: LinearLayout
-    private lateinit var rawJsonView: TextView
-    private lateinit var jsonToggleButton: Button
 
     // التبويبات الثلاثة: الرئيسية (الهدف + الإجراءات + النتائج)، المحادثة،
     // الإعدادات. العنوان والحالة ثابتان فوق التبويبات وتبديلها لا يمس
@@ -270,10 +249,6 @@ class MainActivity : Activity() {
             setOnClickListener { runPolicyDiag() }
         }
         actionsCard.addView(buttonRow(policyDiagButton))
-        analysisButton = styledButton(getString(R.string.analysis_run), true).apply {
-            setOnClickListener { runAnalysis() }
-        }
-        actionsCard.addView(analysisButton, fullWidthParams())
         shareButton = styledButton(getString(R.string.share_list), false).apply {
             isEnabled = false
             setOnClickListener { shareList() }
@@ -376,41 +351,6 @@ class MainActivity : Activity() {
         chatSettingsCard.addView(chatLimitStatus)
         addCard(settingsContent, chatSettingsCard)
 
-        // بطاقة إعدادات التحليل — حد خطوات التحليل الكامل
-        val analysisSettingsCard = sectionCard()
-        analysisSettingsCard.addView(sectionTitle(getString(R.string.analysis_settings_title)))
-        analysisSettingsCard.addView(fieldLabel(getString(R.string.analysis_limit_label)))
-        analysisLimitInput = styledField(getString(R.string.analysis_limit_hint)).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER
-        }
-        analysisSettingsCard.addView(analysisLimitInput)
-        analysisUnlimitedCheck = CheckBox(this).apply {
-            text = getString(R.string.analysis_unlimited)
-            textSize = 15f
-            setTextColor(0xFFF5F5F5.toInt())
-            setOnCheckedChangeListener { _, checked ->
-                analysisLimitInput.isEnabled = !checked
-            }
-        }
-        analysisSettingsCard.addView(analysisUnlimitedCheck)
-        analysisSettingsCard.addView(TextView(this).apply {
-            text = getString(R.string.analysis_limit_warning)
-            textSize = 13f
-            setTextColor(0xFFB0B0B0.toInt())
-            setPadding(0, dp(4), 0, 0)
-        })
-        analysisLimitSaveButton = styledButton(getString(R.string.analysis_limit_save), false).apply {
-            setOnClickListener { saveAnalysisLimit() }
-        }
-        analysisSettingsCard.addView(analysisLimitSaveButton, fullWidthParams())
-        analysisLimitStatus = TextView(this).apply {
-            textSize = 14f
-            setTextColor(0xFFB0B0B0.toInt())
-            setPadding(0, dp(8), 0, 0)
-        }
-        analysisSettingsCard.addView(analysisLimitStatus)
-        addCard(settingsContent, analysisSettingsCard)
-
         // بطاقة النتائج
         val resultsCard = sectionCard()
         val resultsHeader = LinearLayout(this).apply {
@@ -445,7 +385,6 @@ class MainActivity : Activity() {
         setContentView(root)
         loadProviderSettings()
         loadChatLimit()
-        loadAnalysisLimit()
         chatSession = ChatStore.load(mcpDir())
         renderChat()
         showTab(0)
@@ -454,7 +393,7 @@ class MainActivity : Activity() {
     /**
      * يبني تبويب المحادثة: رسائل تملأ الشاشة وتمرّر وحدها، وصف ثابت في
      * الأسفل فيه حقل الكتابة وزر الإرسال — مثل أي تطبيق محادثة. فوقه
-     * صف «نفّذ» و«مسح».
+     * صف «مسح» و«إيقاف إجباري».
      */
     private fun buildChatTab(root: LinearLayout, tabContentParams: LinearLayout.LayoutParams) {
         chatContainer = LinearLayout(this).apply {
@@ -472,16 +411,6 @@ class MainActivity : Activity() {
                 LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f,
             ),
         )
-        chatRunButton = styledButton(getString(R.string.chat_run), false).apply {
-            setOnClickListener {
-                val instructions = chatSession.instructionsForAnalysis()
-                if (instructions.isBlank()) {
-                    Toast.makeText(this@MainActivity, R.string.chat_no_instructions, Toast.LENGTH_SHORT).show()
-                } else {
-                    runAnalysis(instructions)
-                }
-            }
-        }
         chatClearButton = styledButton(getString(R.string.chat_clear), false).apply {
             setOnClickListener {
                 chatSession = ChatSession()
@@ -494,7 +423,7 @@ class MainActivity : Activity() {
             isEnabled = false
             setOnClickListener { stopChat() }
         }
-        val actionsRow = buttonRow(chatRunButton, chatClearButton, chatStopButton).apply {
+        val actionsRow = buttonRow(chatClearButton, chatStopButton).apply {
             setPadding(dp(16), dp(8), dp(16), 0)
         }
         chatContainer.addView(actionsRow)
@@ -654,13 +583,10 @@ class MainActivity : Activity() {
         gateButton.isEnabled = !busy
         stressButton.isEnabled = !busy
         logButton.isEnabled = !busy
-        analysisButton.isEnabled = !busy
         fetchModelsButton.isEnabled = !busy
         saveSettingsButton.isEnabled = !busy
         chatLimitSaveButton.isEnabled = !busy
-        analysisLimitSaveButton.isEnabled = !busy
         chatSendButton.isEnabled = !busy
-        chatRunButton.isEnabled = !busy
         chatClearButton.isEnabled = !busy
         shareButton.isEnabled = !busy && lastDir != null
     }
@@ -701,13 +627,13 @@ class MainActivity : Activity() {
         chatScroll.post { chatScroll.fullScroll(ScrollView.FOCUS_DOWN) }
     }
 
-    /** يرسل رسالة محادثة للنموذج؛ قد يقرأ الكود ليشرح، أو يطلب «نفّذ». */
+    /** يرسل رسالة محادثة للنموذج؛ قد يقرأ الكود ليشرح، أو يعدّل وينفّذ مباشرة. */
     private fun sendChat() {
         val text = chatInput.text.toString().trim()
         if (text.isBlank()) return
         val settings = settingsFromFields()
         if (!settings.isConfigured()) {
-            settingsStatus.text = getString(R.string.analysis_no_provider)
+            settingsStatus.text = getString(R.string.settings_no_provider)
             return
         }
         providerSettings = settings
@@ -727,7 +653,6 @@ class MainActivity : Activity() {
                     ?: targetInput.text.toString().trim().ifBlank { null }
                 val agent = ChatAgent(
                     model::chat, runner, target,
-                    lastReportJson?.take(2000),
                     maxToolSteps = chatMaxToolSteps,
                 )
                 currentChatAgent = agent
@@ -744,10 +669,7 @@ class MainActivity : Activity() {
                     chatStopButton.isEnabled = false
                     clearChatRunRefs()
                     shareButton.isEnabled = true
-                    if (outcome is ChatOutcome.RunAnalysis) {
-                        statusView.text = getString(R.string.chat_run_started)
-                        runAnalysis(outcome.instructions)
-                    } else if (outcome is ChatOutcome.Stopped) {
+                    if (outcome is ChatOutcome.Stopped) {
                         statusView.text = getString(R.string.chat_stopped)
                     } else {
                         statusView.text = getString(R.string.chat_answered)
@@ -763,7 +685,7 @@ class MainActivity : Activity() {
                 }
             } catch (e: ModelException) {
                 runOnUiThread {
-                    statusView.text = getString(R.string.analysis_failed, e.message ?: "")
+                    statusView.text = getString(R.string.chat_failed, e.message ?: "")
                     recoverChatMessage(text)
                     setBusy(false)
                     chatStopButton.isEnabled = false
@@ -771,7 +693,7 @@ class MainActivity : Activity() {
                 }
             } catch (e: Exception) {
                 runOnUiThread {
-                    statusView.text = getString(R.string.analysis_failed, e.message ?: e.toString())
+                    statusView.text = getString(R.string.chat_failed, e.message ?: e.toString())
                     recoverChatMessage(text)
                     setBusy(false)
                     chatStopButton.isEnabled = false
@@ -1026,41 +948,6 @@ class MainActivity : Activity() {
                     Toast.makeText(this, R.string.no_log_yet, Toast.LENGTH_SHORT).show()
                 }
             }
-        }
-    }
-
-    /** حد خطوات التحليل: يُحفظ كعدد صحيح؛ Int.MAX_VALUE = بلا حد. */
-    private fun loadAnalysisLimit() {
-        analysisMaxSteps = getSharedPreferences("musaed_analysis", Context.MODE_PRIVATE)
-            .getInt("analysis_max_steps", AnalysisLoop.DEFAULT_MAX_STEPS)
-        fillAnalysisLimitFields()
-    }
-
-    private fun fillAnalysisLimitFields() {
-        val unlimited = analysisMaxSteps == Int.MAX_VALUE
-        analysisUnlimitedCheck.isChecked = unlimited
-        analysisLimitInput.isEnabled = !unlimited
-        analysisLimitInput.setText(if (unlimited) "" else analysisMaxSteps.toString())
-    }
-
-    /** يحفظ حد خطوات التحليل في الجهاز فقط (1–200، أو بلا حد). */
-    private fun saveAnalysisLimit() {
-        analysisMaxSteps = if (analysisUnlimitedCheck.isChecked) {
-            Int.MAX_VALUE
-        } else {
-            val n = analysisLimitInput.text.toString().trim().toIntOrNull()
-                ?: AnalysisLoop.DEFAULT_MAX_STEPS
-            n.coerceIn(1, 200)
-        }
-        getSharedPreferences("musaed_analysis", Context.MODE_PRIVATE)
-            .edit()
-            .putInt("analysis_max_steps", analysisMaxSteps)
-            .apply()
-        fillAnalysisLimitFields()
-        analysisLimitStatus.text = if (analysisMaxSteps == Int.MAX_VALUE) {
-            getString(R.string.analysis_limit_saved_unlimited)
-        } else {
-            getString(R.string.analysis_limit_saved, analysisMaxSteps)
         }
     }
 
@@ -1327,204 +1214,6 @@ class MainActivity : Activity() {
         chosenApkPath = null
         chosenApkName = null
         apkFileLabel.text = getString(R.string.apk_none)
-    }
-
-    /**
-     * يعرض تقرير التحليل منظّماً (المرحلة 5): النتيجة أولاً من JSON، ثم
-     * التقرير العربي، ثم الأدلة كبطاقات قابلة للفتح، وJSON الخام خلف زر.
-     * حالة «خادم صرف» تُعرض بسطرها الصريح — لا تُخفى ولا تُجمَّل.
-     */
-    private fun renderAnalysisResult(result: AnalysisResult) {
-        resetResults()
-        resultView.visibility = View.GONE
-        resultsContainer.visibility = View.VISIBLE
-        val summary = ReportView.parse(result.reportJson)
-        val verdictLine = TextView(this).apply {
-            textSize = 17f
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(0xFFC9A227.toInt())
-            text = if (summary != null) {
-                val conf = summary.confidence?.let {
-                    " — " + getString(
-                        R.string.report_confidence,
-                        "%.2f".format(Locale.US, it),
-                    )
-                } ?: ""
-                getString(R.string.report_verdict, summary.verdictLabel) + conf
-            } else {
-                getString(R.string.report_verdict, "؟")
-            }
-        }
-        resultsContainer.addView(verdictLine)
-        summary?.gateText?.let { gate ->
-            resultsContainer.addView(TextView(this).apply {
-                textSize = 15f
-                setTextColor(0xFFE0E0E0.toInt())
-                text = getString(R.string.report_gate, gate)
-            })
-        }
-        if (summary?.paymentSdk != null && summary.paymentSdk != "none") {
-            resultsContainer.addView(TextView(this).apply {
-                textSize = 15f
-                setTextColor(0xFFE0E0E0.toInt())
-                text = getString(R.string.report_sdk, summary.paymentSdk)
-            })
-        }
-        if (summary?.verdict == "server") {
-            resultsContainer.addView(TextView(this).apply {
-                textSize = 15f
-                typeface = Typeface.DEFAULT_BOLD
-                setTextColor(0xFFC9A227.toInt())
-                text = getString(R.string.report_not_modifiable)
-            })
-        }
-        val arabicView = TextView(this).apply {
-            textSize = 15f
-            setTextColor(0xFFE0E0E0.toInt())
-            setPadding(0, dp(8), 0, 0)
-            text = result.reportArabic ?: getString(R.string.report_arabic_missing)
-        }
-        resultsContainer.addView(arabicView)
-        if (summary != null && summary.evidence.isNotEmpty()) {
-            resultsContainer.addView(TextView(this).apply {
-                textSize = 15f
-                typeface = Typeface.DEFAULT_BOLD
-                setTextColor(0xFFC9A227.toInt())
-                setPadding(0, dp(12), 0, dp(4))
-                text = getString(R.string.report_evidence_title)
-            })
-            summary.evidence.forEach { card ->
-                resultsContainer.addView(evidenceCardView(card))
-            }
-        }
-        jsonToggleButton = styledButton(getString(R.string.show_raw_json), false).apply {
-            setOnClickListener {
-                val showing = rawJsonView.visibility == View.VISIBLE
-                rawJsonView.visibility = if (showing) View.GONE else View.VISIBLE
-                text = getString(
-                    if (showing) R.string.show_raw_json else R.string.hide_raw_json,
-                )
-            }
-        }
-        resultsContainer.addView(jsonToggleButton, fullWidthParams())
-        rawJsonView = TextView(this).apply {
-            textSize = 13f
-            setTextColor(0xFFB0B0B0.toInt())
-            visibility = View.GONE
-            text = result.reportJson ?: "{}"
-        }
-        resultsContainer.addView(rawJsonView)
-        result.notes.forEach { note ->
-            resultsContainer.addView(TextView(this).apply {
-                textSize = 13f
-                setTextColor(0xFFB0B0B0.toInt())
-                setPadding(0, dp(6), 0, 0)
-                text = "ملاحظة: $note"
-            })
-        }
-    }
-
-    /** بطاقة دليل واحدة: العنوان والمعرّف ظاهران، والمقتطف يُفتح بالضغط. */
-    private fun evidenceCardView(card: EvidenceCard): LinearLayout {
-        val detail = TextView(this).apply {
-            textSize = 14f
-            setTextColor(0xFFE0E0E0.toInt())
-            visibility = View.GONE
-            setPadding(0, dp(4), 0, 0)
-            text = card.excerpt.ifBlank { "—" }
-        }
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(10), dp(8), dp(10), dp(8))
-            background = roundedBg(0xFF1E1E1E.toInt(), 0xFFC9A227.toInt())
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { topMargin = dp(6) }
-            addView(TextView(this@MainActivity).apply {
-                textSize = 15f
-                typeface = Typeface.DEFAULT_BOLD
-                setTextColor(0xFFE0E0E0.toInt())
-                text = "#${card.id} — ${card.identifier.ifBlank { "؟" }}"
-            })
-            addView(TextView(this@MainActivity).apply {
-                textSize = 13f
-                setTextColor(0xFFB0B0B0.toInt())
-                text = getString(R.string.report_evidence_tool, card.tool.ifBlank { "؟" })
-            })
-            addView(detail)
-            setOnClickListener {
-                detail.visibility =
-                    if (detail.visibility == View.VISIBLE) View.GONE else View.VISIBLE
-            }
-        }
-    }
-
-    private fun runAnalysis(userInstructions: String? = null) {
-        val settings = settingsFromFields()
-        if (!settings.isConfigured()) {
-            settingsStatus.text = getString(R.string.analysis_no_provider)
-            return
-        }
-        providerSettings = settings
-        // الملف المختار يقدَّم على الحزمة المكتوبة (المرحلة 5).
-        val target = chosenApkPath
-            ?: targetInput.text.toString().trim().ifBlank { StressTester.DEFAULT_TARGET }
-        setBusy(true)
-        statusView.text = getString(R.string.status_analysis_running)
-        resetResults()
-        thread {
-            val client = McpClient()
-            val log = SessionLog()
-            val runner = ToolRunner(client::callTool, log)
-            try {
-                client.connect()
-                val model = ModelClient(settings.toModelConfig())
-                val loop = AnalysisLoop(model::chat, runner, log, SystemPrompt.TEXT, maxSteps = analysisMaxSteps)
-                val result = loop.run(target, userInstructions) { step ->
-                    runOnUiThread { statusView.text = step }
-                }
-                val dir = mcpDir()
-                SessionLogStore.save(dir, log)
-                AnalysisStore.save(dir, result)
-                lastDir = dir
-                lastReportJson = result.reportJson
-                runOnUiThread {
-                    statusView.text = if (result.success) {
-                        getString(R.string.analysis_ok, result.stepsUsed, result.targetPackage)
-                    } else {
-                        getString(R.string.analysis_failed, result.notes.lastOrNull() ?: "")
-                    }
-                    if (result.success) {
-                        renderAnalysisResult(result)
-                    } else {
-                        resultView.text = buildString {
-                            result.notes.forEach { appendLine("ملاحظة: $it") }
-                        }
-                    }
-                    setBusy(false)
-                    shareButton.isEnabled = true
-                }
-            } catch (e: McpException) {
-                runOnUiThread {
-                    statusView.text = getString(R.string.status_failed, e.message ?: "")
-                    resultView.text = getString(R.string.how_to_start_service)
-                    setBusy(false)
-                }
-            } catch (e: ModelException) {
-                runOnUiThread {
-                    statusView.text = getString(R.string.analysis_failed, e.message ?: "")
-                    setBusy(false)
-                }
-            } catch (e: Exception) {
-                runOnUiThread {
-                    statusView.text = getString(R.string.analysis_failed, e.message ?: e.toString())
-                    setBusy(false)
-                }
-            } finally {
-                runner.shutdown()
-            }
-        }
     }
 
     private fun shareList() {

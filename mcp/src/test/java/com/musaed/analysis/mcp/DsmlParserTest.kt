@@ -37,6 +37,18 @@ class DsmlParserTest {
     }
 
     @Test
+    fun `braces inside a string value do not break the arguments object`() {
+        val reply = """
+            <|DSML| invoke name="mt_apk_search">
+            <|DSML| parameter name="arguments" string="true">{"target": "dex_strings", "query": "a}b", "limit": 5}</|DSML| parameter>
+        """.trimIndent()
+        val call = DsmlParser.parse(reply)
+        assertTrue(call != null)
+        assertEquals("a}b", call!!.arguments.get("query").asString)
+        assertEquals(5, call.arguments.get("limit").asInt)
+    }
+
+    @Test
     fun `returns null for plain text`() {
         assertNull(DsmlParser.parse("أهلاً، اسألني عن التطبيق."))
         assertNull(DsmlParser.parse("{\"tool\": \"mt_apk_search\", \"arguments\": {}}"))
